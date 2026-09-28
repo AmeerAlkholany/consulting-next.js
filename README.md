@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Psychological Consultation Booking Platform
 
-## Getting Started
+A production-grade, highly reliable psychological consultation booking platform built with Next.js 16 (App Router, Turbopack) and TypeScript in strict mode.
 
-First, run the development server:
+---
+
+## Architectural Documentation
+
+Comprehensive system blueprints, rationale, and execution roadmaps are maintained directly in the repository root:
+
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — Architectural source of truth (system design, security, RBAC, booking invariants, timezone handling).
+- **[IMPLEMENTATION.md](./IMPLEMENTATION.md)** — 24-step dependency-ordered implementation roadmap.
+- **[ADR.md](./ADR.md)** — 20 Architecture Decision Records explaining context and trade-offs.
+
+---
+
+## Prerequisites
+
+- **Node.js:** v20.9.0 or higher
+- **pnpm:** v10.28.2+
+- **PostgreSQL:** 16+ with the `btree_gist` extension (required for double-booking exclusion constraints)
+
+---
+
+## Environment Configuration
+
+Configuration values are strictly validated at import time via `config/env.ts`.
+
+Copy `.env.example` to `.env.local` to start development:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Refer to `.env.example` and `ARCHITECTURE.md §27` for detailed documentation of all variables.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Available Scripts
 
-## Learn More
+```bash
+# Start development server
+pnpm dev
 
-To learn more about Next.js, take a look at the following resources:
+# Check code formatting with Prettier
+pnpm format:check
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Format codebase with Prettier
+pnpm format
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Run ESLint
+pnpm lint
 
-## Deploy on Vercel
+# Run TypeScript compilation and Next route typegen
+pnpm typecheck
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Run tests (placeholder in Step 1, Vitest runner from Step 2 onward)
+pnpm test
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Create optimized production build
+pnpm build
+
+# Start production server
+pnpm start
+```
+
+---
+
+## Core Technical Conventions
+
+- **Next.js 16 APIs:** Request APIs (`cookies()`, `headers()`, `params`, `searchParams`) are asynchronous and must be awaited. `proxy.ts` replaces `middleware.ts`.
+- **Environment Access:** Direct usage of `process.env` is restricted. Always import `{ env }` from `@/config/env`.
+- **Database & Concurrency:** Overlap prevention is enforced at the database level using PostgreSQL exclusion constraints over `tstzrange` (`btree_gist`).
+- **Authorization & Scoping:** Ownership filtering occurs directly inside query `where` clauses; unmatched or unowned private records yield 404 rather than 403.

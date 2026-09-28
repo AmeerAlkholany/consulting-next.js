@@ -13,6 +13,28 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // Restrict access to process.env across the entire project
+    // except inside config/env.ts which validates it.
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "process",
+          property: "env",
+          message:
+            "Do not access process.env directly. Import validated environment variables from '@/config/env'.",
+        },
+      ],
+    },
+  },
+  {
+    // Exemption for config/env.ts which is the single entry point that reads process.env.
+    files: ["config/env.ts"],
+    rules: {
+      "no-restricted-properties": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

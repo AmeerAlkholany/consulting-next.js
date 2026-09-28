@@ -8,7 +8,7 @@ on:
 
 jobs:
   quality-gate:
-    name: Lint, Typecheck, and Build
+    name: Lint, Typecheck, Test, and Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

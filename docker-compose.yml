@@ -1,0 +1,38 @@
+# Local development database (ARCHITECTURE.md §28).
+#
+# PostgreSQL 16 is pinned because the schema depends on range types and
+# exclusion constraints over `tstzrange` via the `btree_gist` extension.
+#
+#   docker compose up -d          start
+#   docker compose down           stop, keeping data
+#   docker compose down -v        stop and delete data
+#
+# Credentials here are local-development only and intentionally trivial. They
+# match the defaults in `.env.example`; never reuse them anywhere real.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: consulting-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: consulting
+      # Deterministic collation so seed ordering and tests match CI.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Creates the database used by the database test suites. Runs once, on
+      # first initialization of an empty data volume.
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d consulting"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres-data:

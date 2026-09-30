@@ -12,6 +12,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   DATABASE_URL: z.string().min(1).optional(),
   DIRECT_URL: z.string().min(1).optional(),
+  // Dedicated database for the Vitest database suites, which truncate the rows
+  // they create. Falls back to DATABASE_URL when unset (ARCHITECTURE.md §25).
+  TEST_DATABASE_URL: z.string().min(1).optional(),
   APP_URL: z.string().url().default("http://localhost:3000"),
   SESSION_COOKIE_NAME: z.string().default("session"),
   SESSION_TTL_DAYS: z.coerce.number().int().positive().default(7),

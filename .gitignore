@@ -43,3 +43,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# prisma generated client — rebuilt by `prisma generate`, which `postinstall` runs
+/db/generated/
+

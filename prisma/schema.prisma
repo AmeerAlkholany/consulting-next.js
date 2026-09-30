@@ -1,0 +1,535 @@
+// Prisma schema — psychological consultation booking platform.
+//
+// ARCHITECTURE.md §8 is the source of truth for this file: models, attributes,
+// indexes, unique constraints, and cascade/restrict rules. Anything the Prisma
+// schema language cannot express — exclusion constraints over `tstzrange`,
+// CHECK constraints, partial indexes, and the GIN full-text index — lives in
+// `prisma/migrations/<timestamp>_constraints/migration.sql` and is covered by
+// the database tests in `tests/db/`.
+//
+// Conventions:
+//   - Every timestamp is `timestamptz(3)` (millisecond precision, UTC).
+//   - Identifiers are opaque UUIDv7 (`@default(uuid(7))`): unguessable, and
+//     time-ordered so index inserts stay sequential.
+//   - Money is an integer count of minor units plus an ISO-4217 currency code.
+//   - Model and field names map to table and column names unchanged; the
+//     hand-written SQL in the migrations refers to them as written here.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../db/generated/prisma"
+}
+
+// No `url` here: Prisma 7 takes the migration connection from
+// `prisma.config.ts` and the runtime connection from the driver adapter in
+// `db/create-client.ts`. See ARCHITECTURE.md §8.1 and §27.
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CLIENT
+  CONSULTANT
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ConsultationType {
+  ONLINE
+  IN_PERSON
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum CancelledBy {
+  CLIENT
+  CONSULTANT
+  ADMIN
+  SYSTEM
+}
+
+enum AvailabilityExceptionType {
+  BLOCK
+  EXTRA
+}
+
+enum NotificationType {
+  APPOINTMENT_REQUESTED
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_RESCHEDULED
+  APPOINTMENT_REMINDER
+  APPOINTMENT_COMPLETED
+  REVIEW_RECEIVED
+  CONSULTANT_APPROVED
+  CONSULTANT_REJECTED
+  CONSULTANT_SUSPENDED
+}
+
+enum NoteVisibility {
+  CONSULTANT_ONLY
+  SHARED
+}
+
+enum OutboxStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+/// Covers both email verification and password reset (ARCHITECTURE.md §8.2).
+enum VerificationTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum AuditAction {
+  USER_SUSPENDED
+  USER_REACTIVATED
+  USER_ROLE_CHANGED
+  CONSULTANT_APPROVED
+  CONSULTANT_REJECTED
+  CONSULTANT_SUSPENDED
+  APPOINTMENT_CANCELLED_BY_ADMIN
+  SPECIALIZATION_CREATED
+  SPECIALIZATION_UPDATED
+  SPECIALIZATION_DISABLED
+  REVIEW_UNPUBLISHED
+}
+
+model User {
+  id               String     @id @default(uuid(7)) @db.Uuid
+  /// Stored lowercase-normalized; unique. ≤ 254 characters.
+  email            String     @unique @db.VarChar(254)
+  emailVerifiedAt  DateTime?  @db.Timestamptz(3)
+  /// Argon2id encoded string. Never selected by any read DTO.
+  passwordHash     String     @db.VarChar(255)
+  role             UserRole   @default(CLIENT)
+  status           UserStatus @default(ACTIVE)
+  fullName         String     @db.VarChar(100)
+  /// IANA zone, validated against Intl.supportedValuesOf("timeZone").
+  timezone         String     @default("UTC") @db.VarChar(64)
+  locale           String     @default("en") @db.VarChar(10)
+  failedLoginCount Int        @default(0)
+  lockedUntil      DateTime?  @db.Timestamptz(3)
+  createdAt        DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime   @updatedAt @db.Timestamptz(3)
+  /// Soft delete (ARCHITECTURE.md §17). Excluded from every read path.
+  deletedAt        DateTime?  @db.Timestamptz(3)
+
+  clientProfile         ClientProfile?
+  consultantProfile     ConsultantProfile?
+  sessions              Session[]
+  verificationTokens    VerificationToken[]
+  notifications         Notification[]
+  emailedMessages       EmailOutbox[]
+  auditLogs             AuditLog[]          @relation("AuditActor")
+  cancelledAppointments Appointment[]       @relation("AppointmentCancelledBy")
+  authoredNotes         AppointmentNote[]   @relation("NoteAuthor")
+  verifiedConsultants   ConsultantProfile[] @relation("ConsultantVerificationReviewer")
+  moderatedReviews      Review[]            @relation("ReviewModerator")
+
+  @@index([role, status])
+  @@index([createdAt])
+}
+
+model Session {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String    @db.Uuid
+  /// SHA-256 of the random 32-byte cookie token. The raw token is never stored.
+  tokenHash  String    @unique @db.Char(64)
+  expiresAt  DateTime  @db.Timestamptz(3)
+  /// Drives sliding renewal after 24 hours of use (ARCHITECTURE.md §9).
+  lastUsedAt DateTime  @db.Timestamptz(3)
+  revokedAt  DateTime? @db.Timestamptz(3)
+  ipHash     String?   @db.Char(64)
+  userAgent  String?   @db.VarChar(200)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model VerificationToken {
+  id         String                @id @default(uuid(7)) @db.Uuid
+  userId     String                @db.Uuid
+  type       VerificationTokenType
+  /// SHA-256 of the single-use token. Single-use, TTL-bounded.
+  tokenHash  String                @unique @db.Char(64)
+  expiresAt  DateTime              @db.Timestamptz(3)
+  consumedAt DateTime?             @db.Timestamptz(3)
+  createdAt  DateTime              @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+model ClientProfile {
+  id                    String    @id @default(uuid(7)) @db.Uuid
+  userId                String    @unique @db.Uuid
+  /// What a consultant sees; defaults to the user's first name.
+  displayName           String    @db.VarChar(100)
+  /// E.164. Optional and never public.
+  phone                 String?   @db.VarChar(32)
+  /// Optional; used only for age-appropriateness checks.
+  dateOfBirth           DateTime? @db.Date
+  emergencyContactName  String?   @db.VarChar(100)
+  emergencyContactPhone String?   @db.VarChar(32)
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  languages    ClientLanguage[]
+  appointments Appointment[]
+  reviews      Review[]
+}
+
+model ConsultantProfile {
+  id                       String             @id @default(uuid(7)) @db.Uuid
+  userId                   String             @unique @db.Uuid
+  /// URL-safe, generated from the name plus a disambiguator at registration.
+  slug                     String             @unique @db.VarChar(120)
+  headline                 String             @db.VarChar(120)
+  /// 50–4000 characters. Indexed for search by a GIN expression index.
+  bio                      String
+  yearsOfExperience        Int
+  /// > 0, also enforced by a CHECK constraint.
+  sessionPriceMinor        Int
+  currency                 String             @db.Char(3)
+  /// One of 30, 45, 50, 60, 90 in the service layer.
+  sessionDurationMinutes   Int
+  bufferMinutes            Int                @default(10)
+  minLeadTimeHours         Int                @default(12)
+  maxAdvanceDays           Int                @default(60)
+  cancellationWindowHours  Int                @default(24)
+  /// Non-empty in the service layer; canonical order is the enum's.
+  consultationTypes        ConsultationType[]
+  /// Required when IN_PERSON is offered.
+  addressLine              String?            @db.VarChar(200)
+  city                     String?            @db.VarChar(100)
+  country                  String?            @db.VarChar(100)
+  /// IANA zone. Authoritative for this consultant's availability rules.
+  timezone                 String             @db.VarChar(64)
+  verificationStatus       VerificationStatus @default(PENDING)
+  verificationReviewedAt   DateTime?          @db.Timestamptz(3)
+  /// The reviewing admin. Null if that admin row is removed: losing the
+  /// reviewer is preferable to being unable to delete the account.
+  verificationReviewedById String?            @db.Uuid
+  rejectionReason          String?            @db.VarChar(500)
+  autoConfirmBookings      Boolean            @default(false)
+  isAcceptingBookings      Boolean            @default(true)
+  /// Denormalized review aggregate, updated inside the review transaction.
+  ratingSum                Int                @default(0)
+  ratingCount              Int                @default(0)
+  publishedAt              DateTime?          @db.Timestamptz(3)
+  createdAt                DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime           @updatedAt @db.Timestamptz(3)
+
+  user                   User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verificationReviewer   User?                      @relation("ConsultantVerificationReviewer", fields: [verificationReviewedById], references: [id], onDelete: SetNull)
+  qualifications         Qualification[]
+  specializations        ConsultantSpecialization[]
+  languages              ConsultantLanguage[]
+  availabilityRules      AvailabilityRule[]
+  availabilityExceptions AvailabilityException[]
+  appointments           Appointment[]
+  reviews                Review[]
+
+  @@index([verificationStatus, isAcceptingBookings])
+  @@index([sessionPriceMinor])
+  @@index([ratingCount, ratingSum])
+}
+
+model Qualification {
+  id                  String   @id @default(uuid(7)) @db.Uuid
+  consultantProfileId String   @db.Uuid
+  title               String   @db.VarChar(200)
+  institution         String   @db.VarChar(200)
+  awardedYear         Int
+  credentialId        String?  @db.VarChar(120)
+  /// Private document reference: consultants and admins only.
+  documentUrl         String?  @db.VarChar(500)
+  createdAt           DateTime @default(now()) @db.Timestamptz(3)
+
+  consultantProfile ConsultantProfile @relation(fields: [consultantProfileId], references: [id], onDelete: Cascade)
+
+  @@index([consultantProfileId])
+}
+
+model Specialization {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  slug        String   @unique @db.VarChar(80)
+  name        String   @unique @db.VarChar(80)
+  description String?  @db.VarChar(500)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  consultants ConsultantSpecialization[]
+
+  @@index([isActive, sortOrder])
+}
+
+/// Join table. Deleting a specialization that is in use is restricted: admins
+/// disable it instead, so no consultant silently loses a listed specialty.
+model ConsultantSpecialization {
+  consultantProfileId String @db.Uuid
+  specializationId    String @db.Uuid
+
+  consultantProfile ConsultantProfile @relation(fields: [consultantProfileId], references: [id], onDelete: Cascade)
+  specialization    Specialization    @relation(fields: [specializationId], references: [id], onDelete: Restrict)
+
+  @@id([consultantProfileId, specializationId])
+  @@index([specializationId])
+}
+
+model Language {
+  id   String @id @default(uuid(7)) @db.Uuid
+  /// ISO 639-1 two-letter code.
+  code String @unique @db.VarChar(2)
+  name String @unique @db.VarChar(60)
+
+  consultants ConsultantLanguage[]
+  clients     ClientLanguage[]
+}
+
+model ConsultantLanguage {
+  consultantProfileId String @db.Uuid
+  languageId          String @db.Uuid
+
+  consultantProfile ConsultantProfile @relation(fields: [consultantProfileId], references: [id], onDelete: Cascade)
+  language          Language          @relation(fields: [languageId], references: [id], onDelete: Restrict)
+
+  @@id([consultantProfileId, languageId])
+  @@index([languageId])
+}
+
+model ClientLanguage {
+  clientProfileId String @db.Uuid
+  languageId      String @db.Uuid
+
+  clientProfile ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+  language      Language      @relation(fields: [languageId], references: [id], onDelete: Restrict)
+
+  @@id([clientProfileId, languageId])
+  @@index([languageId])
+}
+
+/// Recurring weekly availability, expressed as wall-clock minutes from local
+/// midnight in the consultant's own timezone.
+///
+/// Overlap between two active rules for the same consultant and weekday is
+/// rejected in the service layer: a database exclusion constraint is
+/// impractical here because the ranges are integers scoped by a date validity
+/// window (ARCHITECTURE.md §8.2).
+model AvailabilityRule {
+  id                  String    @id @default(uuid(7)) @db.Uuid
+  consultantProfileId String    @db.Uuid
+  /// 0 = Monday … 6 = Sunday.
+  weekday             Int
+  /// Minutes from local midnight, 0–1439.
+  startMinute         Int
+  /// Minutes from local midnight, 1–1440; must exceed startMinute (CHECK).
+  endMinute           Int
+  effectiveFrom       DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  /// Null means open-ended.
+  effectiveUntil      DateTime? @db.Date
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(3)
+
+  consultantProfile ConsultantProfile @relation(fields: [consultantProfileId], references: [id], onDelete: Cascade)
+
+  @@index([consultantProfileId, weekday, isActive])
+}
+
+/// A dated exception to the weekly rules: a BLOCK removes slots, an EXTRA adds
+/// them. A BLOCK with null minutes covers the whole local day.
+model AvailabilityException {
+  id                  String                    @id @default(uuid(7)) @db.Uuid
+  consultantProfileId String                    @db.Uuid
+  /// Local date in the consultant's timezone.
+  date                DateTime                  @db.Date
+  type                AvailabilityExceptionType
+  startMinute         Int?
+  endMinute           Int?
+  reason              String?                   @db.VarChar(200)
+  createdAt           DateTime                  @default(now()) @db.Timestamptz(3)
+
+  consultantProfile ConsultantProfile @relation(fields: [consultantProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([consultantProfileId, date, type, startMinute])
+  @@index([consultantProfileId, date])
+}
+
+/// A booking. Availability is computed, never materialized: no slot table
+/// exists, and an appointment *is* the reservation (§18).
+///
+/// Two exclusion constraints created by the `_constraints` migration make
+/// overlapping PENDING/CONFIRMED appointments impossible for one consultant and
+/// for one client, at the database level. Prisma cannot express them.
+model Appointment {
+  id                     String            @id @default(uuid(7)) @db.Uuid
+  clientProfileId        String            @db.Uuid
+  consultantProfileId    String            @db.Uuid
+  /// UTC instants. Half-open interval [startsAt, endsAt); endsAt > startsAt.
+  startsAt               DateTime          @db.Timestamptz(3)
+  endsAt                 DateTime          @db.Timestamptz(3)
+  /// Captured at booking time so historical display stays correct.
+  clientTimezone         String            @db.VarChar(64)
+  consultantTimezone     String            @db.VarChar(64)
+  status                 AppointmentStatus @default(PENDING)
+  consultationType       ConsultationType
+  /// Price snapshot; the consultant may change their price afterwards.
+  priceMinor             Int
+  currency               String            @db.Char(3)
+  sessionDurationMinutes Int
+  /// ≤ 1000 characters. Visible to the consultant only.
+  clientNote             String?           @db.VarChar(1000)
+  /// De-duplicates double submits of the same booking attempt.
+  requestIdempotencyKey  String?           @unique @db.VarChar(100)
+  confirmedAt            DateTime?         @db.Timestamptz(3)
+  completedAt            DateTime?         @db.Timestamptz(3)
+  cancelledAt            DateTime?         @db.Timestamptz(3)
+  cancelledById          String?           @db.Uuid
+  cancelledBy            CancelledBy?
+  cancellationReason     String?           @db.VarChar(500)
+  /// Rescheduling is modelled as cancel-plus-create, linked here (§18.2).
+  rescheduledFromId      String?           @unique @db.Uuid
+  /// Empty rather than null when nothing has been sent yet.
+  remindersSentAt        DateTime[]        @default([]) @db.Timestamptz(3)
+  createdAt              DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime          @updatedAt @db.Timestamptz(3)
+
+  clientProfile     ClientProfile     @relation(fields: [clientProfileId], references: [id], onDelete: Restrict)
+  consultantProfile ConsultantProfile @relation(fields: [consultantProfileId], references: [id], onDelete: Restrict)
+  cancelledByUser   User?             @relation("AppointmentCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+  rescheduledFrom   Appointment?      @relation("AppointmentReschedule", fields: [rescheduledFromId], references: [id], onDelete: SetNull)
+  rescheduledTo     Appointment?      @relation("AppointmentReschedule")
+  notes             AppointmentNote[]
+  review            Review?
+
+  @@index([consultantProfileId, startsAt])
+  @@index([clientProfileId, startsAt(sort: Desc)])
+  @@index([status, startsAt])
+}
+
+model AppointmentNote {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  appointmentId String         @db.Uuid
+  authorUserId  String         @db.Uuid
+  /// AES-256-GCM envelope, never plaintext (§17): the ciphertext plus the key
+  /// id and per-row IV needed to decrypt it, so keys can be rotated.
+  body          String
+  visibility    NoteVisibility @default(CONSULTANT_ONLY)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  authorUser  User        @relation("NoteAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+
+  @@index([appointmentId])
+}
+
+model Review {
+  id                  String   @id @default(uuid(7)) @db.Uuid
+  /// One review per appointment; only COMPLETED appointments are reviewable.
+  appointmentId       String   @unique @db.Uuid
+  clientProfileId     String   @db.Uuid
+  consultantProfileId String   @db.Uuid
+  /// CHECK (rating BETWEEN 1 AND 5).
+  rating              Int
+  comment             String?  @db.VarChar(2000)
+  isPublished         Boolean  @default(true)
+  /// The admin who unpublished it, if any.
+  moderatedById       String?  @db.Uuid
+  createdAt           DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(3)
+
+  appointment       Appointment       @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  clientProfile     ClientProfile     @relation(fields: [clientProfileId], references: [id], onDelete: Restrict)
+  consultantProfile ConsultantProfile @relation(fields: [consultantProfileId], references: [id], onDelete: Restrict)
+  moderatedBy       User?             @relation("ReviewModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+
+  @@index([consultantProfileId, isPublished, createdAt(sort: Desc)])
+}
+
+/// `payload` carries ids and display-safe strings only — never clinical
+/// content (§17). The unread badge is served by a partial index created in the
+/// `_constraints` migration.
+model Notification {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  payload   Json             @db.JsonB
+  readAt    DateTime?        @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+/// Written from day one, drained once an email provider is configured (§20).
+model EmailOutbox {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  userId      String?      @db.Uuid
+  toEmail     String       @db.VarChar(254)
+  template    String       @db.VarChar(80)
+  payload     Json         @db.JsonB
+  status      OutboxStatus @default(PENDING)
+  attempts    Int          @default(0)
+  lastError   String?
+  availableAt DateTime     @default(now()) @db.Timestamptz(3)
+  sentAt      DateTime?    @db.Timestamptz(3)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, availableAt])
+}
+
+/// Append-only. No application path updates or deletes a row.
+model AuditLog {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  actorUserId String      @db.Uuid
+  action      AuditAction
+  entityType  String      @db.VarChar(60)
+  entityId    String      @db.VarChar(64)
+  /// Redacted metadata only.
+  metadata    Json        @db.JsonB
+  ipHash      String?     @db.Char(64)
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+
+  actorUser User @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([action, createdAt(sort: Desc)])
+}
+
+// Not modelled here: `RateLimitCounter`. ARCHITECTURE.md §8.2 lists it as
+// conditional on Redis not being provisioned, and this deployment uses Redis
+// for the production rate-limit driver (§27), so the table would be dead weight.

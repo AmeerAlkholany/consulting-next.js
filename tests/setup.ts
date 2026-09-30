@@ -1,5 +1,11 @@
-import { afterEach } from "vitest";
+import "@/config/load-env";
+import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
+
+// Mock server-only so tests in Node environment can import modules marked server-only
+vi.mock("server-only", () => {
+  return {};
+});
 
 const hasDom = typeof window !== "undefined" && typeof document !== "undefined";
 

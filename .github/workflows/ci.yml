@@ -10,6 +10,30 @@ jobs:
   quality-gate:
     name: Lint, Typecheck, Test, and Build
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: consulting
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/consulting"
+      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/consulting"
+      TEST_DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/consulting_test"
+      APP_URL: "http://localhost:3000"
+      SEED_ADMIN_EMAIL: "admin@example.com"
+      SEED_ADMIN_PASSWORD: "super-secret-password-123"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,6 +57,18 @@ jobs:
 
       - name: Run linter
         run: pnpm lint
+
+      - name: Create the test database
+        run: psql "postgresql://postgres:postgres@localhost:5432/postgres" -c 'CREATE DATABASE consulting_test OWNER postgres;'
+
+      - name: Run Prisma migrations
+        run: |
+          # The service container starts empty: this proves `migrate deploy`
+          # reproduces the whole schema, hand-written constraints included,
+          # from nothing. The second run prepares the dedicated test database,
+          # so the database suites never truncate development data.
+          pnpm exec prisma migrate deploy
+          DIRECT_URL="$TEST_DATABASE_URL" pnpm exec prisma migrate deploy
 
       - name: Run typecheck
         run: pnpm typecheck

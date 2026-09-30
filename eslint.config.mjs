@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     // Generated and vendor directories.
     "node_modules/**",
     "coverage/**",
+    // Prisma's generated client: machine-written, and regenerated on install.
+    "db/generated/**",
   ]),
   {
     // Restrict access to process.env across the entire project
@@ -33,8 +35,8 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // Exemption for config/env.ts which is the single entry point that reads process.env.
-    files: ["config/env.ts"],
+    // Exemption for config/env.ts, config/load-env.ts, and prisma.config.ts which are CLI/env entry points.
+    files: ["config/env.ts", "config/load-env.ts", "prisma.config.ts"],
     rules: {
       "no-restricted-properties": "off",
     },

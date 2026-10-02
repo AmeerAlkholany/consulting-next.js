@@ -125,4 +125,6 @@ export const authRateLimits = {
    * the password-reset budget, keyed per user.
    */
   resendVerificationPerUser: { points: 3, durationMs: HOUR },
+  /** Public discovery typeahead search. */
+  discoverySearch: { points: 30, durationMs: MINUTE },
 } as const;

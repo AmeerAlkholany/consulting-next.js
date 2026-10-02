@@ -57,6 +57,7 @@ const limiters: Record<keyof typeof authRateLimits, RateLimiter> = {
   passwordResetPerEmail: createRateLimiter(authRateLimits.passwordResetPerEmail),
   passwordResetPerIp: createRateLimiter(authRateLimits.passwordResetPerIp),
   resendVerificationPerUser: createRateLimiter(authRateLimits.resendVerificationPerUser),
+  discoverySearch: createRateLimiter(authRateLimits.discoverySearch),
 };
 
 /** Emails are stored and compared lowercase-normalized (§9 registration step 2). */

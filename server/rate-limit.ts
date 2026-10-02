@@ -55,3 +55,5 @@ export class MemoryRateLimiter implements RateLimiter {
 export function createRateLimiter(budget: RateLimitBudget): RateLimiter {
   return new MemoryRateLimiter(budget);
 }
+
+export { authRateLimits } from "@/config/security";

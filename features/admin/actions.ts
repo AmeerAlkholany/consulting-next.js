@@ -2,147 +2,155 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/server/authz/guards";
-import { getSession } from "@/server/auth/dal";
 import { readAuthRequestContext } from "@/server/auth/request-context";
 import {
-  createSpecialization,
-  updateSpecialization,
-  reorderSpecializations,
-  disableSpecialization,
-  enableSpecialization,
-} from "@/server/services/specializations";
-import { specializationSchema, updateSpecializationSchema, reorderSpecializationsSchema, specializationIdSchema } from "@/schemas/taxonomy";
+  approveConsultant,
+  rejectConsultant,
+  suspendConsultant,
+  reinstateConsultant,
+} from "@/server/services/admin";
+import { verificationDecisionSchema, consultantFilterSchema } from "@/schemas/admin";
 import { formError, formSuccess, parseForm, type AuthFormState } from "@/features/auth/form-state";
 
 /**
- * Server Actions for admin taxonomy management (IMPLEMENTATION.md Step 7).
+ * Server Actions for admin consultant verification (IMPLEMENTATION.md Step 9).
  */
 
-export async function createSpecializationAction(
+export async function approveConsultantAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
   const admin = await requireAdmin();
 
-  const parsed = parseForm(specializationSchema, {
-    name: formData.get("name") as string,
-    description: formData.get("description") as string | null,
-    sortOrder: formData.get("sortOrder") as string | null,
-    isActive: formData.get("isActive") === "on",
+  const parsed = parseForm(verificationDecisionSchema, {
+    consultantProfileId: formData.get("consultantProfileId") as string,
+    action: "approve",
+    reason: formData.get("reason") ? (formData.get("reason") as string) : undefined,
+    internalNote: formData.get("internalNote") ? (formData.get("internalNote") as string) : undefined,
   });
 
   if (!parsed.ok) return parsed.state;
 
   const ctx = await readAuthRequestContext();
-  const result = await createSpecialization({ actor: admin, ipHash: ctx.ipHash }, parsed.data);
+  const result = await approveConsultant({ actor: admin, ipHash: ctx.ipHash }, parsed.data.consultantProfileId, parsed.data.reason, parsed.data.internalNote);
 
-  if (result.status === "conflict") {
-    return formError(result.message, { [result.field]: [result.message] });
+  if (result.status === "invalid_state") {
+    return formError(`Cannot approve consultant with status: ${result.currentStatus}`);
   }
-
   if (result.status === "not_found") {
-    return formError("Specialization not found.");
+    return formError("Consultant profile not found.");
   }
 
-  revalidatePath("/admin/specializations");
-  return formSuccess("Specialization created.");
+  revalidatePath("/admin/consultants");
+  revalidatePath("/admin");
+  return formSuccess("Consultant approved.");
 }
 
-export async function updateSpecializationAction(
+export async function rejectConsultantAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
   const admin = await requireAdmin();
 
-  const id = formData.get("id") as string;
-  const idParsed = specializationIdSchema.safeParse(id);
-  if (!idParsed.success) return formError("Invalid specialization ID.");
-
-  const parsed = parseForm(updateSpecializationSchema, {
-    name: formData.get("name") as string,
-    description: formData.get("description") as string | null,
-    sortOrder: formData.get("sortOrder") as string | null,
-    isActive: formData.get("isActive") === "on",
+  const parsed = parseForm(verificationDecisionSchema, {
+    consultantProfileId: formData.get("consultantProfileId") as string,
+    action: "reject",
+    reason: formData.get("reason") ? (formData.get("reason") as string) : undefined,
+    internalNote: formData.get("internalNote") ? (formData.get("internalNote") as string) : undefined,
   });
 
   if (!parsed.ok) return parsed.state;
 
   const ctx = await readAuthRequestContext();
-  const result = await updateSpecialization({ actor: admin, ipHash: ctx.ipHash }, id, parsed.data);
+  const result = await rejectConsultant({ actor: admin, ipHash: ctx.ipHash }, parsed.data.consultantProfileId, parsed.data.reason ?? "", parsed.data.internalNote);
 
-  if (result.status === "conflict") {
-    return formError(result.message, { [result.field]: [result.message] });
+  if (result.status === "invalid_state") {
+    return formError(`Cannot reject consultant with status: ${result.currentStatus}`);
   }
-
   if (result.status === "not_found") {
-    return formError("Specialization not found.");
+    return formError("Consultant profile not found.");
   }
 
-  revalidatePath("/admin/specializations");
-  return formSuccess("Specialization updated.");
+  revalidatePath("/admin/consultants");
+  revalidatePath("/admin");
+  return formSuccess("Consultant rejected.");
 }
 
-export async function reorderSpecializationsAction(
+export async function suspendConsultantAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
   const admin = await requireAdmin();
 
-  const raw = formData.get("items") as string;
-  const parsed = reorderSpecializationsSchema.safeParse(JSON.parse(raw));
-  if (!parsed.success) {
-    return formError("Invalid reorder payload.");
-  }
+  const parsed = parseForm(verificationDecisionSchema, {
+    consultantProfileId: formData.get("consultantProfileId") as string,
+    action: "suspend",
+    reason: formData.get("reason") ? (formData.get("reason") as string) : undefined,
+    internalNote: formData.get("internalNote") ? (formData.get("internalNote") as string) : undefined,
+  });
+
+  if (!parsed.ok) return parsed.state;
 
   const ctx = await readAuthRequestContext();
-  const result = await reorderSpecializations({ actor: admin, ipHash: ctx.ipHash }, parsed.data);
+  const result = await suspendConsultant({ actor: admin, ipHash: ctx.ipHash }, parsed.data.consultantProfileId, parsed.data.reason ?? "", parsed.data.internalNote);
 
+  if (result.status === "invalid_state") {
+    return formError(`Cannot suspend consultant with status: ${result.currentStatus}`);
+  }
   if (result.status === "not_found") {
-    return formError("One or more specializations not found.");
+    return formError("Consultant profile not found.");
   }
 
-  revalidatePath("/admin/specializations");
-  return formSuccess("Order updated.");
+  revalidatePath("/admin/consultants");
+  revalidatePath("/admin");
+  return formSuccess("Consultant suspended.");
 }
 
-export async function disableSpecializationAction(
+export async function reinstateConsultantAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
   const admin = await requireAdmin();
 
-  const id = formData.get("id") as string;
-  const idParsed = specializationIdSchema.safeParse(id);
-  if (!idParsed.success) return formError("Invalid specialization ID.");
+  const parsed = parseForm(verificationDecisionSchema, {
+    consultantProfileId: formData.get("consultantProfileId") as string,
+    action: "reinstate",
+    reason: formData.get("reason") ? (formData.get("reason") as string) : undefined,
+    internalNote: formData.get("internalNote") ? (formData.get("internalNote") as string) : undefined,
+  });
+
+  if (!parsed.ok) return parsed.state;
 
   const ctx = await readAuthRequestContext();
-  const result = await disableSpecialization({ actor: admin, ipHash: ctx.ipHash }, id);
+  const result = await reinstateConsultant({ actor: admin, ipHash: ctx.ipHash }, parsed.data.consultantProfileId, parsed.data.reason, parsed.data.internalNote);
 
+  if (result.status === "invalid_state") {
+    return formError(`Cannot reinstate consultant with status: ${result.currentStatus}`);
+  }
   if (result.status === "not_found") {
-    return formError("Specialization not found.");
+    return formError("Consultant profile not found.");
   }
 
-  revalidatePath("/admin/specializations");
-  return formSuccess("Specialization disabled.");
+  revalidatePath("/admin/consultants");
+  revalidatePath("/admin");
+  return formSuccess("Consultant reinstated.");
 }
 
-export async function enableSpecializationAction(
+export async function filterConsultantsAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
   const admin = await requireAdmin();
 
-  const id = formData.get("id") as string;
-  const idParsed = specializationIdSchema.safeParse(id);
-  if (!idParsed.success) return formError("Invalid specialization ID.");
+  const parsed = parseForm(consultantFilterSchema, {
+    status: formData.get("status") as string,
+    search: formData.get("search") as string,
+    page: formData.get("page") as string,
+    perPage: formData.get("perPage") as string,
+  });
 
-  const ctx = await readAuthRequestContext();
-  const result = await enableSpecialization({ actor: admin, ipHash: ctx.ipHash }, id);
+  if (!parsed.ok) return parsed.state;
 
-  if (result.status === "not_found") {
-    return formError("Specialization not found.");
-  }
-
-  revalidatePath("/admin/specializations");
-  return formSuccess("Specialization enabled.");
+  // This action is for filter submission, redirect is handled by the page
+  return formSuccess("Filtered.");
 }

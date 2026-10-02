@@ -32,3 +32,22 @@ export const paginationSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   perPage: z.coerce.number().int().positive().max(100).default(20),
 });
+
+/**
+ * Flattens a Zod error into the `fieldErrors` shape the action result types
+ * carry (`types/result.ts`). Issues with no path are keyed `form`, so a
+ * schema-level failure still surfaces as a message rather than vanishing.
+ */
+export function fieldErrorsFromZodError(error: z.ZodError): Record<string, string[]> {
+  const fieldErrors: Record<string, string[]> = {};
+
+  for (const issue of error.issues) {
+    const key =
+      issue.path.length > 0 ? issue.path.map((segment) => String(segment)).join(".") : "form";
+    const messages = fieldErrors[key] ?? [];
+    messages.push(issue.message);
+    fieldErrors[key] = messages;
+  }
+
+  return fieldErrors;
+}

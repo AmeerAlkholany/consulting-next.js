@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   // checking is worth the opt-in.
   typedRoutes: true,
 
+  // A native N-API addon cannot be bundled: `@node-rs/argon2` loads a
+  // platform-specific `.node` binary at runtime. Keeping it external is what
+  // lets `next build` trace it into the server output instead of trying to
+  // parse it (ARCHITECTURE.md §3).
+  serverExternalPackages: ["@node-rs/argon2"],
+
   // Baseline security headers configured per ARCHITECTURE.md §16.
   // Full CSP and per-request nonce injection are introduced in Step 19.
   async headers() {

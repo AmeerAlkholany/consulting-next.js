@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import { Toaster } from "@/components/feedback/toaster";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { siteConfig } from "@/config/site";
+import { AnonymousAuthActions, AuthMenu } from "@/features/auth/auth-menu";
+import { VerificationBanner } from "@/features/auth/verification-banner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,7 +40,24 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           >
             Skip to main content
           </a>
-          <SiteHeader />
+          <SiteHeader
+            authSlot={
+              // The session read is pushed into a Suspense boundary so the shell
+              // paints immediately; the fallback is also the correct state for
+              // every signed-out visitor.
+              <Suspense fallback={<AnonymousAuthActions variant="desktop" />}>
+                <AuthMenu variant="desktop" />
+              </Suspense>
+            }
+            authSlotMobile={
+              <Suspense fallback={<AnonymousAuthActions variant="mobile" />}>
+                <AuthMenu variant="mobile" />
+              </Suspense>
+            }
+          />
+          <Suspense fallback={null}>
+            <VerificationBanner />
+          </Suspense>
           <main id="main-content" className="flex-1">
             {children}
           </main>

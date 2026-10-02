@@ -20,20 +20,28 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: ReturnType<typeof createPrismaClient>;
 };
 
-function requireDatabaseUrl(): string {
-  if (!env.DATABASE_URL) {
+function resolveConnectionString(): string {
+  // The integration suites exercise the real service layer, which imports this
+  // module. In `NODE_ENV=test` the dedicated test database therefore wins, under
+  // the same rule `tests/helpers/db.ts` applies, so a suite can never truncate
+  // or pollute development data (ARCHITECTURE.md §25, §27).
+  const connectionString =
+    env.NODE_ENV === "test" ? (env.TEST_DATABASE_URL ?? env.DATABASE_URL) : env.DATABASE_URL;
+
+  if (!connectionString) {
     // Names the variable, never a value: a connection string carries the
     // password (ARCHITECTURE.md §8, error handling).
     throw new Error(
       "DATABASE_URL is not set. Copy .env.example to .env.local and point it at your PostgreSQL instance.",
     );
   }
-  return env.DATABASE_URL;
+
+  return connectionString;
 }
 
 function createClient(): ReturnType<typeof createPrismaClient> {
   return createPrismaClient({
-    connectionString: requireDatabaseUrl(),
+    connectionString: resolveConnectionString(),
     onQuery: (event) => {
       logger.debug({ durationMs: event.durationMs, params: event.params }, event.query);
     },

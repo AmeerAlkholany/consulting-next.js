@@ -7,8 +7,14 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Two projects (ARCHITECTURE.md §25):
- * - `node`  — pure logic: helpers, schemas, error mapping, services.
+ * - `node`  — pure logic: helpers, schemas, error mapping, services, and the
+ *             database-backed integration suites.
  * - `jsdom` — React components rendered with Testing Library.
+ *
+ * `fileParallelism: false` on the node project is deliberate: the database
+ * suites share one dedicated database and truncate it between tests, so two
+ * files running at once would delete each other's rows. Unit files are cheap,
+ * and correctness beats a couple of seconds.
  */
 export default defineConfig({
   test: {
@@ -22,8 +28,13 @@ export default defineConfig({
         test: {
           name: "node",
           environment: "node",
-          include: ["tests/unit/**/*.test.ts", "tests/db/**/*.test.ts"],
+          include: [
+            "tests/unit/**/*.test.ts",
+            "tests/db/**/*.test.ts",
+            "tests/integration/**/*.test.ts",
+          ],
           setupFiles: ["tests/setup.ts"],
+          fileParallelism: false,
         },
       },
       {

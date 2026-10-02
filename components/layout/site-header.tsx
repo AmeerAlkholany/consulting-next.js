@@ -4,16 +4,28 @@ import * as React from "react";
 import Link from "next/link";
 import { HeartHandshake, Menu, X } from "lucide-react";
 import { Container } from "@/components/layout/container";
-import { buttonVariants } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
-import { cn } from "@/lib/cn";
 
 const navigation = [
   { href: "/consultants", label: "Find a consultant" },
   { href: "/crisis-resources", label: "Crisis resources" },
 ] as const;
 
-function SiteHeader() {
+/**
+ * The site chrome. Navigation and the hamburger's open state are client
+ * concerns; the authentication area is *not* — it is passed in as a slot so it
+ * can be a Server Component reading the session through the cached DAL, and so
+ * the shell can stream around it with `<Suspense>` (ARCHITECTURE.md §6: a
+ * top-level `await` on cookies in a layout delays the whole segment).
+ */
+export interface SiteHeaderProps {
+  /** Signed-in or signed-out affordances for the desktop bar. */
+  authSlot?: React.ReactNode;
+  /** The same, laid out as a column inside the mobile panel. */
+  authSlotMobile?: React.ReactNode;
+}
+
+function SiteHeader({ authSlot, authSlotMobile }: SiteHeaderProps) {
   const [open, setOpen] = React.useState(false);
   const panelId = "site-navigation-panel";
 
@@ -56,14 +68,7 @@ function SiteHeader() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
-            Sign in
-          </Link>
-          <Link href="/register" className={cn(buttonVariants({ size: "sm" }))}>
-            Create account
-          </Link>
-        </div>
+        <div className="hidden items-center gap-2 md:flex">{authSlot}</div>
 
         <button
           type="button"
@@ -96,22 +101,7 @@ function SiteHeader() {
                 </Link>
               ))}
             </nav>
-            <div className="flex flex-col gap-2 pt-2">
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className={cn(buttonVariants({ variant: "outline" }))}
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setOpen(false)}
-                className={cn(buttonVariants())}
-              >
-                Create account
-              </Link>
-            </div>
+            <div className="flex flex-col gap-2 pt-2">{authSlotMobile}</div>
           </Container>
         </div>
       ) : null}

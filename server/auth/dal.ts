@@ -22,9 +22,8 @@ import {
  * `server/services/auth.ts` (`touchSession`), which is only called from Server
  * Actions, because Next.js forbids cookie writes during render.
  *
- * `requireUser` and the role guards arrive with the rest of the authorization
- * layer in Step 5; they build on `getCurrentUser` rather than duplicating the
- * lookup.
+ * `requireUser` and the role guards are exported from `server/authz/guards.ts`,
+ * which builds on these functions rather than duplicating the lookup.
  */
 
 /**

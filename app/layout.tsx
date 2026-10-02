@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import Link from "next/link";
+import type { Metadata } from "next";
 import { Toaster } from "@/components/feedback/toaster";
 import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
 import { siteConfig } from "@/config/site";
 import { AnonymousAuthActions, AuthMenu } from "@/features/auth/auth-menu";
-import { VerificationBanner } from "@/features/auth/verification-banner";
+import { getCurrentUser } from "@/server/auth/dal";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,40 +29,28 @@ export const metadata: Metadata = {
   applicationName: siteConfig.name,
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await getCurrentUser();
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
-        <Toaster>
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-md focus:bg-primary focus:px-4 focus:text-sm focus:font-medium focus:text-primary-foreground"
-          >
-            Skip to main content
-          </a>
-          <SiteHeader
-            authSlot={
-              // The session read is pushed into a Suspense boundary so the shell
-              // paints immediately; the fallback is also the correct state for
-              // every signed-out visitor.
+        <Toaster>{null}</Toaster>
+        <Suspense fallback={null}>
+          <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+              <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
+                {siteConfig.name}
+              </Link>
               <Suspense fallback={<AnonymousAuthActions variant="desktop" />}>
                 <AuthMenu variant="desktop" />
               </Suspense>
-            }
-            authSlotMobile={
-              <Suspense fallback={<AnonymousAuthActions variant="mobile" />}>
-                <AuthMenu variant="mobile" />
-              </Suspense>
-            }
-          />
-          <Suspense fallback={null}>
-            <VerificationBanner />
-          </Suspense>
+            </div>
+          </header>
           <main id="main-content" className="flex-1">
             {children}
           </main>
-          <SiteFooter />
-        </Toaster>
+        </Suspense>
+        <SiteFooter />
       </body>
     </html>
   );

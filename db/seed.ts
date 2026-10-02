@@ -134,24 +134,7 @@ const SPECIALIZATIONS: ReadonlyArray<{ slug: string; name: string; description: 
   },
 ];
 
-/** ISO 639-1 codes, the fifteen the seeded consultants cover. */
-const LANGUAGES: ReadonlyArray<{ code: string; name: string }> = [
-  { code: "ar", name: "Arabic" },
-  { code: "de", name: "German" },
-  { code: "en", name: "English" },
-  { code: "es", name: "Spanish" },
-  { code: "fa", name: "Persian" },
-  { code: "fr", name: "French" },
-  { code: "hi", name: "Hindi" },
-  { code: "it", name: "Italian" },
-  { code: "nl", name: "Dutch" },
-  { code: "pl", name: "Polish" },
-  { code: "pt", name: "Portuguese" },
-  { code: "ru", name: "Russian" },
-  { code: "sv", name: "Swedish" },
-  { code: "tr", name: "Turkish" },
-  { code: "ur", name: "Urdu" },
-];
+import { LANGUAGES } from "@/config/languages";
 
 interface ConsultantSeed {
   /** Stable natural key, used for emails and slugs. */

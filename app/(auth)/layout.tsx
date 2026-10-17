@@ -16,9 +16,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         title="Authentication"
         description="Sign in or create an account to access the platform."
       />
-      <div className="flex flex-col gap-4">
-        {children}
-      </div>
+      <div className="flex flex-col gap-4">{children}</div>
       <p className="text-sm text-muted-foreground text-center">
         <Link href="/" className={cn(buttonVariants({ variant: "outline" }))}>
           Back to the home page

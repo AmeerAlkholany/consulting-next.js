@@ -15,23 +15,47 @@ export default function AdminConsultantsLoading() {
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="px-4 py-3"><Skeleton className="h-4 w-24" /></th>
-                  <th className="px-4 py-3"><Skeleton className="h-4 w-32" /></th>
-                  <th className="px-4 py-3"><Skeleton className="h-4 w-20" /></th>
-                  <th className="px-4 py-3"><Skeleton className="h-4 w-32" /></th>
-                  <th className="px-4 py-3"><Skeleton className="h-4 w-16" /></th>
-                  <th className="px-4 py-3"><Skeleton className="h-4 w-24" /></th>
+                  <th className="px-4 py-3">
+                    <Skeleton className="h-4 w-24" />
+                  </th>
+                  <th className="px-4 py-3">
+                    <Skeleton className="h-4 w-32" />
+                  </th>
+                  <th className="px-4 py-3">
+                    <Skeleton className="h-4 w-20" />
+                  </th>
+                  <th className="px-4 py-3">
+                    <Skeleton className="h-4 w-32" />
+                  </th>
+                  <th className="px-4 py-3">
+                    <Skeleton className="h-4 w-16" />
+                  </th>
+                  <th className="px-4 py-3">
+                    <Skeleton className="h-4 w-24" />
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {[1, 2, 3, 4, 5].map((i) => (
                   <tr key={i}>
-                    <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-32" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-40" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-20" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-32" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-16" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-24" />
+                    </td>
                   </tr>
                 ))}
               </tbody>

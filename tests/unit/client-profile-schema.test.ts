@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { clientProfileSchema, changePasswordSchema } from "@/schemas/client-profile";
-import { fieldErrorsFromZodError } from "@/schemas/common";
 
 /**
  * Client profile validation rules (IMPLEMENTATION.md Step 6, "Validation

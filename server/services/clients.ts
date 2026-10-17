@@ -3,10 +3,7 @@ import "server-only";
 import { db } from "@/db/client";
 import { logger } from "@/server/logger";
 import { AuthenticationError } from "@/server/errors";
-import {
-  getClientProfile,
-  type ClientProfileData,
-} from "@/server/dal/client-profile";
+import { getClientProfile, type ClientProfileData } from "@/server/dal/client-profile";
 import type { ClientProfileInput, ChangePasswordInput } from "@/schemas/client-profile";
 
 /**
@@ -202,10 +199,9 @@ export async function checkDeletionBlocks(actor: { id: string }): Promise<Blocke
  * their ClientProfile. Appointments are NOT deleted (they belong to the other
  * party too), so we refuse deletion when blocking future appointments exist.
  */
-export async function requestAccountDeletion(actor: { id: string }): Promise<
-  | { status: "ok" }
-  | { status: "blocked"; appointments: Blocker[] }
-> {
+export async function requestAccountDeletion(actor: {
+  id: string;
+}): Promise<{ status: "ok" } | { status: "blocked"; appointments: Blocker[] }> {
   const blockers = await checkDeletionBlocks(actor);
 
   if (blockers) {

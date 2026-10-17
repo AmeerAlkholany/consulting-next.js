@@ -41,14 +41,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const tokenHash = rawToken ? hashOpaqueToken(rawToken) : null;
 
   // Protected routes: require an active session cookie.
-  const isProtected = protectedPathPrefixes.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
+  const isProtected = protectedPathPrefixes.some((prefix) => matchesPrefix(pathname, prefix));
 
   // Auth-only routes: signed-in users are redirected away.
-  const isAuthOnly = authOnlyPathPrefixes.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
+  const isAuthOnly = authOnlyPathPrefixes.some((prefix) => matchesPrefix(pathname, prefix));
 
   if (isProtected && !tokenHash) {
     const next = safeNext(pathname);
@@ -65,6 +61,14 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   return NextResponse.next({ headers: responseHeaders });
+}
+
+/**
+ * Matches a path against a route prefix on segment boundaries, so `/consultant`
+ * does not also capture the public `/consultants` discovery route.
+ */
+export function matchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
 /**

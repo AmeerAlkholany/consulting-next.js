@@ -40,7 +40,12 @@ export async function writeAuditLog(
   });
 
   logger.info(
-    { actorId: ctx.actor.id, action: entry.action, entityType: entry.entityType, entityId: entry.entityId },
+    {
+      actorId: ctx.actor.id,
+      action: entry.action,
+      entityType: entry.entityType,
+      entityId: entry.entityId,
+    },
     "audit log written",
   );
 }

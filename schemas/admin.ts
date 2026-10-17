@@ -23,13 +23,12 @@ export const verificationDecisionSchema = z
     { message: "Reason is required for reject and suspend actions.", path: ["reason"] },
   );
 
-export const consultantFilterSchema = z
-  .object({
-    status: z.enum(["ALL", "PENDING", "APPROVED", "REJECTED", "SUSPENDED"]).default("ALL"),
-    search: z.string().trim().max(80).optional().default(""),
-    page: z.coerce.number().int().min(1).max(500).default(1),
-    perPage: z.coerce.number().int().min(1).max(50).default(20),
-  });
+export const consultantFilterSchema = z.object({
+  status: z.enum(["ALL", "PENDING", "APPROVED", "REJECTED", "SUSPENDED"]).default("ALL"),
+  search: z.string().trim().max(80).optional().default(""),
+  page: z.coerce.number().int().min(1).max(500).default(1),
+  perPage: z.coerce.number().int().min(1).max(50).default(20),
+});
 
 export type VerificationDecisionInput = z.infer<typeof verificationDecisionSchema>;
 export type ConsultantFilterInput = z.infer<typeof consultantFilterSchema>;

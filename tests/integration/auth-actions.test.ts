@@ -80,7 +80,13 @@ function loginFormData(email: string, password: string, next?: string): FormData
 }
 
 async function countRows(
-  table: "User" | "Session" | "ClientProfile" | "VerificationToken" | "EmailOutbox" | "ConsultantProfile",
+  table:
+    | "User"
+    | "Session"
+    | "ClientProfile"
+    | "VerificationToken"
+    | "EmailOutbox"
+    | "ConsultantProfile",
 ): Promise<number> {
   const [row] = await prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
     `SELECT count(*)::bigint AS count FROM "${table}"`,
@@ -231,14 +237,11 @@ describe("registration", () => {
   });
 });
 
-
 const GENERIC_LOGIN_MESSAGE = "That email address and password do not match an account.";
 
 async function registerClient(email = "dana@example.com"): Promise<string> {
   resetRequestState();
-  await captureRedirect(() =>
-    registerAction(initialAuthFormState, registerFormData({ email })),
-  );
+  await captureRedirect(() => registerAction(initialAuthFormState, registerFormData({ email })));
   return email;
 }
 
@@ -265,7 +268,10 @@ describe("sign-in", () => {
     await registerClient();
 
     const allowed = await captureRedirect(() =>
-      loginAction(initialAuthFormState, loginFormData("dana@example.com", PASSWORD, "/consultants")),
+      loginAction(
+        initialAuthFormState,
+        loginFormData("dana@example.com", PASSWORD, "/consultants"),
+      ),
     );
     expect(allowed).toBe("/consultants");
 
@@ -363,7 +369,6 @@ describe("sign-in", () => {
     expect(afterSuccess.lockedUntil).toBeNull();
   });
 });
-
 
 describe("session lifecycle", () => {
   it("resolves the signed-in user and reports no session without a valid cookie", async () => {
@@ -517,4 +522,3 @@ describe("rate limits", () => {
     expect(states[4].message).toBe(GENERIC_LOGIN_MESSAGE);
   });
 });
-

@@ -4,9 +4,18 @@ import { db } from "@/db/client";
 import { logger } from "@/server/logger";
 import { AuthorizationError, NotFoundError } from "@/server/errors";
 import { writeAuditLog, type AuditContext } from "./audit";
-import { generateSlug } from "@/schemas/consultant-profile";
-import { getConsultantProfile, getQualifications, type ConsultantProfileData, type QualificationData } from "@/server/dal/consultant-profile";
-import type { ConsultantProfileInput, QualificationInput, PricingPolicyInput, SetSpecializationsInput, SetLanguagesInput } from "@/schemas/consultant-profile";
+import {
+  getConsultantProfile,
+  type ConsultantProfileData,
+  type QualificationData,
+} from "@/server/dal/consultant-profile";
+import type {
+  ConsultantProfileInput,
+  QualificationInput,
+  PricingPolicyInput,
+  SetSpecializationsInput,
+  SetLanguagesInput,
+} from "@/schemas/consultant-profile";
 
 /**
  * Consultant profile service (IMPLEMENTATION.md Step 8).
@@ -36,14 +45,23 @@ export interface NotCompleteResult {
 export function checkCompleteness(profile: ConsultantProfileData): CompletenessResult {
   const missing: string[] = [];
 
-  if (!profile.headline || profile.headline.length < 10) missing.push("Headline (10–120 characters)");
+  if (!profile.headline || profile.headline.length < 10)
+    missing.push("Headline (10–120 characters)");
   if (!profile.bio || profile.bio.length < 50) missing.push("Biography (50–4000 characters)");
   if (profile.yearsOfExperience === undefined) missing.push("Years of experience");
   if (!profile.sessionPriceMinor || profile.sessionPriceMinor <= 0) missing.push("Session price");
   if (!profile.currency) missing.push("Currency");
-  if (!validSessionDurations.includes(profile.sessionDurationMinutes as (typeof validSessionDurations)[0])) missing.push("Session duration");
+  if (
+    !validSessionDurations.includes(
+      profile.sessionDurationMinutes as (typeof validSessionDurations)[0],
+    )
+  )
+    missing.push("Session duration");
   if (profile.consultationTypes.length === 0) missing.push("At least one consultation type");
-  if (profile.consultationTypes.includes("IN_PERSON") && (!profile.addressLine || !profile.city || !profile.country)) {
+  if (
+    profile.consultationTypes.includes("IN_PERSON") &&
+    (!profile.addressLine || !profile.city || !profile.country)
+  ) {
     missing.push("Address (required for in-person consultations)");
   }
   if (profile.specializationIds.length === 0) missing.push("At least one specialization");
@@ -212,7 +230,10 @@ export async function upsertQualification(
 }
 
 /** Deletes a qualification. */
-export async function deleteQualification(actor: { id: string }, qualificationId: string): Promise<void> {
+export async function deleteQualification(
+  actor: { id: string },
+  qualificationId: string,
+): Promise<void> {
   const profile = await getConsultantProfile(actor.id);
   if (!profile) throw new AuthorizationError("Consultant profile not found.");
 
@@ -500,7 +521,10 @@ export async function submitForVerification(
     metadata: { verificationStatus: "PENDING" },
   });
 
-  logger.info({ userId: ctx.actor.id, verificationStatus: updated.verificationStatus }, "consultant submitted for verification");
+  logger.info(
+    { userId: ctx.actor.id, verificationStatus: updated.verificationStatus },
+    "consultant submitted for verification",
+  );
 
   return {
     status: "ok",

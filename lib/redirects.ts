@@ -24,7 +24,6 @@ export function isSafeRedirectPath(value: string | null | undefined): boolean {
     return false;
   }
 
-  
   if (/[\u0000-\u001F\u007F]/.test(value) || /\s/.test(value) || value.includes("\\")) {
     return false;
   }
@@ -52,4 +51,3 @@ export function safeRedirectPath(value: string | null | undefined, fallback = "/
  * the assertion in `tests/integration/auth-actions.test.ts`.
  */
 export const SIGNED_IN_LANDING_PATH = "/";
-

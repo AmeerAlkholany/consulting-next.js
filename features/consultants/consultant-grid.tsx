@@ -4,14 +4,20 @@ import { Container } from "@/components/layout/container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Search, X, Star } from "lucide-react";
-import { consultantSearchSchema, type ConsultantSearchInput } from "@/schemas/consultant-search";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { type ConsultantSearchInput } from "@/schemas/consultant-search";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
 
 interface PublicConsultantRow {
   id: string;
@@ -48,41 +54,40 @@ export function ConsultantsClient({
   activeLangs: initialActiveLangs,
 }: ConsultantsClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  // The server already parsed `searchParams` into `initialInput`, so the URL is
+  // read on the server only: mirroring it in an effect would cause a cascading
+  // render and a duplicate fetch of data the page already rendered.
   const [input, setInput] = useState<ConsultantSearchInput>(initialInput);
   const [consultants, setConsultants] = useState<PublicConsultantRow[]>(initialConsultants);
   const [total, setTotal] = useState(initialTotal);
-  const [activeSpecs, setActiveSpecs] = useState<Array<{ id: string; name: string }>>(initialActiveSpecs);
-  const [activeLangs, setActiveLangs] = useState<Array<{ id: string; name: string }>>(initialActiveLangs);
+  const [activeSpecs] = useState<Array<{ id: string; name: string }>>(initialActiveSpecs);
+  const [activeLangs] = useState<Array<{ id: string; name: string }>>(initialActiveLangs);
   const [isLoading, setIsLoading] = useState(false);
   const totalPages = Math.ceil(total / 12);
 
-  useEffect(() => {
-    const params = Object.fromEntries(searchParams.entries());
-    const parsed = consultantSearchSchema.safeParse(params);
-    const initialInput = parsed.success ? parsed.data : consultantSearchSchema.parse({});
-    setInput(initialInput);
-  }, [searchParams]);
+  // The first render is already server-populated in production; in dev strict
+  // mode, or when `router.push` re-renders, only refetch once the filters differ
+  // from what the server rendered.
+  const serverInputRef = useRef(JSON.stringify(initialInput));
 
   useEffect(() => {
+    if (JSON.stringify(input) === serverInputRef.current) {
+      return;
+    }
     let cancelled = false;
     setIsLoading(true);
-    async function loadData() {
-      const [specs, langs, results] = await Promise.all([
-        getActiveSpecializations(),
-        getActiveLanguages(),
-        searchConsultants(input),
-      ]);
+    async function loadResults() {
+      const results = await searchConsultants(input);
       if (!cancelled) {
-        setActiveSpecs(specs.map(s => ({ id: s.id, name: s.name })));
-        setActiveLangs(langs.map(l => ({ id: l.id, name: l.name })));
         setConsultants(results.consultants);
         setTotal(results.total);
         setIsLoading(false);
       }
     }
-    loadData();
-    return () => { cancelled = true; };
+    loadResults();
+    return () => {
+      cancelled = true;
+    };
   }, [input]);
 
   const updateUrl = (newInput: Partial<ConsultantSearchInput>) => {
@@ -90,7 +95,12 @@ export function ConsultantsClient({
     setInput(merged);
     const searchParams = new URLSearchParams();
     Object.entries(merged).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "" && !(Array.isArray(value) && value.length === 0)) {
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== "" &&
+        !(Array.isArray(value) && value.length === 0)
+      ) {
         if (Array.isArray(value)) {
           value.forEach((v) => searchParams.append(key, v));
         } else {
@@ -105,8 +115,12 @@ export function ConsultantsClient({
     <Container className="flex flex-col gap-6 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Find a Consultant</h1>
-          <p className="text-sm text-muted-foreground">{total} consultant{total !== 1 ? "s" : ""} available</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Find a Consultant
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {total} consultant{total !== 1 ? "s" : ""} available
+          </p>
         </div>
       </div>
 
@@ -114,7 +128,24 @@ export function ConsultantsClient({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Filters</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => updateUrl({ q: "", specializationIds: [], languageIds: [], consultationTypes: [], priceMin: undefined, priceMax: undefined, minRating: undefined, availableWithinDays: undefined, sort: "relevance", page: 1 })}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              updateUrl({
+                q: "",
+                specializationIds: [],
+                languageIds: [],
+                consultationTypes: [],
+                priceMin: undefined,
+                priceMax: undefined,
+                minRating: undefined,
+                availableWithinDays: undefined,
+                sort: "relevance",
+                page: 1,
+              })
+            }
+          >
             <X className="h-4 w-4 mr-1" />
             Clear all
           </Button>
@@ -137,12 +168,14 @@ export function ConsultantsClient({
                   <label key={spec.id} className="flex items-center gap-2 rounded border px-3 py-1">
                     <Checkbox
                       checked={input.specializationIds.includes(spec.id)}
-                      onCheckedChange={(checked: boolean) => updateUrl({
-                        specializationIds: checked
-                          ? [...input.specializationIds, spec.id]
-                          : input.specializationIds.filter((id) => id !== spec.id),
-                        page: 1,
-                      })}
+                      onCheckedChange={(checked: boolean) =>
+                        updateUrl({
+                          specializationIds: checked
+                            ? [...input.specializationIds, spec.id]
+                            : input.specializationIds.filter((id) => id !== spec.id),
+                          page: 1,
+                        })
+                      }
                     />
                     <span className="text-sm">{spec.name}</span>
                   </label>
@@ -156,12 +189,14 @@ export function ConsultantsClient({
                   <label key={lang.id} className="flex items-center gap-2 rounded border px-3 py-1">
                     <Checkbox
                       checked={input.languageIds.includes(lang.id)}
-                      onCheckedChange={(checked: boolean) => updateUrl({
-                        languageIds: checked
-                          ? [...input.languageIds, lang.id]
-                          : input.languageIds.filter((id) => id !== lang.id),
-                        page: 1,
-                      })}
+                      onCheckedChange={(checked: boolean) =>
+                        updateUrl({
+                          languageIds: checked
+                            ? [...input.languageIds, lang.id]
+                            : input.languageIds.filter((id) => id !== lang.id),
+                          page: 1,
+                        })
+                      }
                     />
                     <span className="text-sm">{lang.name}</span>
                   </label>
@@ -175,12 +210,14 @@ export function ConsultantsClient({
                   <label key={type} className="flex items-center gap-2">
                     <Checkbox
                       checked={input.consultationTypes.includes(type)}
-                      onCheckedChange={(checked: boolean) => updateUrl({
-                        consultationTypes: checked
-                          ? [...input.consultationTypes, type]
-                          : input.consultationTypes.filter((t) => t !== type),
-                        page: 1,
-                      })}
+                      onCheckedChange={(checked: boolean) =>
+                        updateUrl({
+                          consultationTypes: checked
+                            ? [...input.consultationTypes, type]
+                            : input.consultationTypes.filter((t) => t !== type),
+                          page: 1,
+                        })
+                      }
                     />
                     {type}
                   </label>
@@ -197,7 +234,12 @@ export function ConsultantsClient({
                   type="number"
                   placeholder="Min"
                   value={input.priceMin ?? ""}
-                  onChange={(e) => updateUrl({ priceMin: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
+                  onChange={(e) =>
+                    updateUrl({
+                      priceMin: e.target.value ? Number(e.target.value) : undefined,
+                      page: 1,
+                    })
+                  }
                   className="w-24"
                 />
                 <span className="flex items-center text-muted-foreground">to</span>
@@ -205,14 +247,22 @@ export function ConsultantsClient({
                   type="number"
                   placeholder="Max"
                   value={input.priceMax ?? ""}
-                  onChange={(e) => updateUrl({ priceMax: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
+                  onChange={(e) =>
+                    updateUrl({
+                      priceMax: e.target.value ? Number(e.target.value) : undefined,
+                      page: 1,
+                    })
+                  }
                   className="w-24"
                 />
               </div>
             </div>
             <div>
               <Label className="text-sm font-medium">Minimum Rating</Label>
-              <Select value={input.minRating?.toString() ?? ""} onValueChange={(v) => updateUrl({ minRating: v ? Number(v) : undefined, page: 1 })}>
+              <Select
+                value={input.minRating?.toString() ?? ""}
+                onValueChange={(v) => updateUrl({ minRating: v ? Number(v) : undefined, page: 1 })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Any rating" />
                 </SelectTrigger>
@@ -227,7 +277,12 @@ export function ConsultantsClient({
             </div>
             <div>
               <Label className="text-sm font-medium">Available Within</Label>
-              <Select value={input.availableWithinDays?.toString() ?? ""} onValueChange={(v) => updateUrl({ availableWithinDays: v ? Number(v) : undefined, page: 1 })}>
+              <Select
+                value={input.availableWithinDays?.toString() ?? ""}
+                onValueChange={(v) =>
+                  updateUrl({ availableWithinDays: v ? Number(v) : undefined, page: 1 })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Any time" />
                 </SelectTrigger>
@@ -241,7 +296,12 @@ export function ConsultantsClient({
               </Select>
             </div>
             <div className="flex items-end">
-              <Select value={input.sort} onValueChange={(v) => updateUrl({ sort: v as ConsultantSearchInput["sort"], page: 1 })}>
+              <Select
+                value={input.sort}
+                onValueChange={(v) =>
+                  updateUrl({ sort: v as ConsultantSearchInput["sort"], page: 1 })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
@@ -285,30 +345,43 @@ export function ConsultantsClient({
                       {consultant.isAcceptingBookings ? "Accepting" : "Not accepting"}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{consultant.headline}</p>
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                    {consultant.headline}
+                  </p>
                   <div className="flex flex-wrap gap-1 mb-3">
                     {consultant.specializations.slice(0, 3).map((s) => (
-                      <Badge key={s.id} variant="outline" className="text-xs">{s.name}</Badge>
+                      <Badge key={s.id} variant="outline" className="text-xs">
+                        {s.name}
+                      </Badge>
                     ))}
                     {consultant.specializations.length > 3 && (
-                      <Badge variant="outline" className="text-xs">+{consultant.specializations.length - 3}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        +{consultant.specializations.length - 3}
+                      </Badge>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-1 mb-3">
                     {consultant.languages.slice(0, 3).map((l) => (
-                      <Badge key={l.id} variant="secondary" className="text-xs">{l.name}</Badge>
+                      <Badge key={l.id} variant="secondary" className="text-xs">
+                        {l.name}
+                      </Badge>
                     ))}
                   </div>
                   <div className="flex items-center justify-between mt-auto pt-3 border-t">
                     <div className="flex items-center gap-2">
                       <Star className="h-4 w-4 text-yellow-500 fill-current" />
                       <span className="text-sm font-medium">
-                        {consultant.ratingCount > 0 ? (consultant.ratingSum / (consultant.ratingCount * 10)).toFixed(1) : "—"}
+                        {consultant.ratingCount > 0
+                          ? (consultant.ratingSum / (consultant.ratingCount * 10)).toFixed(1)
+                          : "—"}
                       </span>
-                      <span className="text-xs text-muted-foreground">({consultant.ratingCount})</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({consultant.ratingCount})
+                      </span>
                     </div>
                     <span className="text-sm font-mono text-muted-foreground">
-                      {consultant.sessionPriceMinor / 100} {consultant.currency} / {consultant.sessionDurationMinutes} min
+                      {consultant.sessionPriceMinor / 100} {consultant.currency} /{" "}
+                      {consultant.sessionDurationMinutes} min
                     </span>
                   </div>
                 </CardContent>
@@ -319,11 +392,23 @@ export function ConsultantsClient({
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">
-              <Button variant="outline" size="sm" disabled={input.page === 1} onClick={() => updateUrl({ page: input.page - 1 })}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={input.page === 1}
+                onClick={() => updateUrl({ page: input.page - 1 })}
+              >
                 Previous
               </Button>
-              <span className="text-sm text-muted-foreground">Page {input.page} of {totalPages}</span>
-              <Button variant="outline" size="sm" disabled={input.page === totalPages} onClick={() => updateUrl({ page: input.page + 1 })}>
+              <span className="text-sm text-muted-foreground">
+                Page {input.page} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={input.page === totalPages}
+                onClick={() => updateUrl({ page: input.page + 1 })}
+              >
                 Next
               </Button>
             </div>
@@ -336,7 +421,23 @@ export function ConsultantsClient({
             <p className="text-muted-foreground text-center max-w-md">
               Try adjusting your filters or search terms to find a match.
             </p>
-            <Button variant="ghost" onClick={() => updateUrl({ q: "", specializationIds: [], languageIds: [], consultationTypes: [], priceMin: undefined, priceMax: undefined, minRating: undefined, availableWithinDays: undefined, sort: "relevance", page: 1 })}>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                updateUrl({
+                  q: "",
+                  specializationIds: [],
+                  languageIds: [],
+                  consultationTypes: [],
+                  priceMin: undefined,
+                  priceMax: undefined,
+                  minRating: undefined,
+                  availableWithinDays: undefined,
+                  sort: "relevance",
+                  page: 1,
+                })
+              }
+            >
               Clear all filters
             </Button>
           </CardContent>
@@ -346,22 +447,15 @@ export function ConsultantsClient({
   );
 }
 
-async function getActiveSpecializations(): Promise<Array<{ id: string; name: string }>> {
-  const res = await fetch("/api/consultants/specializations");
-  if (!res.ok) return [];
-  return res.json();
-}
-
-async function getActiveLanguages(): Promise<Array<{ id: string; name: string }>> {
-  const res = await fetch("/api/consultants/languages");
-  if (!res.ok) return [];
-  return res.json();
-}
-
 async function searchConsultants(input: ConsultantSearchInput) {
   const params = new URLSearchParams();
   Object.entries(input).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "" && !(Array.isArray(value) && value.length === 0)) {
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      !(Array.isArray(value) && value.length === 0)
+    ) {
       if (Array.isArray(value)) {
         value.forEach((v) => params.append(key, v));
       } else {

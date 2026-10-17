@@ -6,7 +6,8 @@ import { consultantSearchSchema } from "@/schemas/consultant-search";
 
 export const metadata: Metadata = {
   title: "Find a Consultant",
-  description: "Search for qualified psychological consultants by specialization, language, price, and availability.",
+  description:
+    "Search for qualified psychological consultants by specialization, language, price, and availability.",
 };
 
 interface ConsultantsPageProps {

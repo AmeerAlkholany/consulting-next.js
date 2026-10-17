@@ -138,7 +138,10 @@ export async function searchConsultants(
       fullName: c.user.fullName,
       verificationStatus: c.verificationStatus,
       isAcceptingBookings: c.isAcceptingBookings,
-      specializations: c.specializations.map((s) => ({ id: s.specialization.id, name: s.specialization.name })),
+      specializations: c.specializations.map((s) => ({
+        id: s.specialization.id,
+        name: s.specialization.name,
+      })),
       languages: c.languages.map((l) => ({ id: l.language.id, name: l.language.name })),
       sessionPriceMinor: c.sessionPriceMinor,
       currency: c.currency,
@@ -159,14 +162,20 @@ function getOrderBy(sort: ConsultantSearchInput["sort"]) {
     case "price_desc":
       return [{ sessionPriceMinor: "desc" as const }, { createdAt: "desc" as const }];
     case "rating":
-      return [{ ratingCount: "desc" as const }, { ratingSum: "desc" as const }, { createdAt: "desc" as const }];
+      return [
+        { ratingCount: "desc" as const },
+        { ratingSum: "desc" as const },
+        { createdAt: "desc" as const },
+      ];
     default:
       return [{ createdAt: "desc" as const }];
   }
 }
 
 /** Fetches a public consultant profile by slug. */
-export async function getPublicConsultantBySlug(slug: string): Promise<PublicConsultantDetailRow | null> {
+export async function getPublicConsultantBySlug(
+  slug: string,
+): Promise<PublicConsultantDetailRow | null> {
   const profile = await db.consultantProfile.findUnique({
     where: { slug },
     select: {
@@ -205,7 +214,11 @@ export async function getPublicConsultantBySlug(slug: string): Promise<PublicCon
 
   if (!profile) return null;
 
-  if (profile.verificationStatus !== "APPROVED" || profile.user.status !== "ACTIVE" || profile.user.deletedAt !== null) {
+  if (
+    profile.verificationStatus !== "APPROVED" ||
+    profile.user.status !== "ACTIVE" ||
+    profile.user.deletedAt !== null
+  ) {
     return null;
   }
 
@@ -235,14 +248,19 @@ export async function getPublicConsultantBySlug(slug: string): Promise<PublicCon
     createdAt: profile.createdAt,
     userId: profile.userId,
     fullName: profile.user.fullName,
-    specializations: profile.specializations.map((s) => ({ id: s.specialization.id, name: s.specialization.name })),
+    specializations: profile.specializations.map((s) => ({
+      id: s.specialization.id,
+      name: s.specialization.name,
+    })),
     languages: profile.languages.map((l) => ({ id: l.language.id, name: l.language.name })),
     qualifications: profile.qualifications,
   };
 }
 
 /** Fetches up to 10 minimal consultant records for typeahead. */
-export async function searchConsultantsTypeahead(q: string): Promise<Pick<PublicConsultantRow, "id" | "slug" | "headline" | "fullName">[]> {
+export async function searchConsultantsTypeahead(
+  q: string,
+): Promise<Pick<PublicConsultantRow, "id" | "slug" | "headline" | "fullName">[]> {
   if (!q.trim()) return [];
 
   const consultants = await db.consultantProfile.findMany({

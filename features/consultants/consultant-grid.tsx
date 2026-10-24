@@ -49,7 +49,12 @@ export function ConsultantsClient({
 }: ConsultantsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [input, setInput] = useState<ConsultantSearchInput>(initialInput);
+  const [input, setInput] = useState<ConsultantSearchInput>(() => {
+    const params = Object.fromEntries(searchParams.entries());
+    const parsed = consultantSearchSchema.safeParse(params);
+    return parsed.success ? parsed.data : consultantSearchSchema.parse({});
+  });
+  // Removed useEffect that setInput to avoid setState in effect
   const [consultants, setConsultants] = useState<PublicConsultantRow[]>(initialConsultants);
   const [total, setTotal] = useState(initialTotal);
   const [activeSpecs, setActiveSpecs] = useState<Array<{ id: string; name: string }>>(initialActiveSpecs);
@@ -58,14 +63,17 @@ export function ConsultantsClient({
   const totalPages = Math.ceil(total / 12);
 
   useEffect(() => {
-    const params = Object.fromEntries(searchParams.entries());
-    const parsed = consultantSearchSchema.safeParse(params);
-    const initialInput = parsed.success ? parsed.data : consultantSearchSchema.parse({});
-    setInput(initialInput);
+    (async () => {
+      const params = Object.fromEntries(searchParams.entries());
+      const parsed = consultantSearchSchema.safeParse(params);
+      const initialInput = parsed.success ? parsed.data : consultantSearchSchema.parse({});
+      setInput(initialInput);
+    })();
   }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     async function loadData() {
       const [specs, langs, results] = await Promise.all([

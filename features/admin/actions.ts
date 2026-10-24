@@ -26,14 +26,20 @@ export async function approveConsultantAction(
     consultantProfileId: formData.get("consultantProfileId") as string,
     action: "approve",
     reason: formData.get("reason") ? (formData.get("reason") as string) : undefined,
-    internalNote: formData.get("internalNote") ? (formData.get("internalNote") as string) : undefined,
+    internalNote: formData.get("internalNote")
+      ? (formData.get("internalNote") as string)
+      : undefined,
   });
 
   if (!parsed.ok) return parsed.state;
 
   const ctx = await readAuthRequestContext();
-  const result = await approveConsultant({ actor: admin, ipHash: ctx.ipHash }, parsed.data.consultantProfileId, parsed.data.reason, parsed.data.internalNote);
-
+  const result = await approveConsultant(
+    { actor: admin, ipHash: ctx.ipHash },
+    parsed.data.consultantProfileId,
+    parsed.data.reason,
+    parsed.data.internalNote,
+  );
   if (result.status === "invalid_state") {
     return formError(`Cannot approve consultant with status: ${result.currentStatus}`);
   }
@@ -56,13 +62,20 @@ export async function rejectConsultantAction(
     consultantProfileId: formData.get("consultantProfileId") as string,
     action: "reject",
     reason: formData.get("reason") ? (formData.get("reason") as string) : undefined,
-    internalNote: formData.get("internalNote") ? (formData.get("internalNote") as string) : undefined,
+    internalNote: formData.get("internalNote")
+      ? (formData.get("internalNote") as string)
+      : undefined,
   });
 
   if (!parsed.ok) return parsed.state;
 
   const ctx = await readAuthRequestContext();
-  const result = await rejectConsultant({ actor: admin, ipHash: ctx.ipHash }, parsed.data.consultantProfileId, parsed.data.reason ?? "", parsed.data.internalNote);
+  const result = await rejectConsultant(
+    { actor: admin, ipHash: ctx.ipHash },
+    parsed.data.consultantProfileId,
+    parsed.data.reason ?? "",
+    parsed.data.internalNote,
+  );
 
   if (result.status === "invalid_state") {
     return formError(`Cannot reject consultant with status: ${result.currentStatus}`);
@@ -86,13 +99,20 @@ export async function suspendConsultantAction(
     consultantProfileId: formData.get("consultantProfileId") as string,
     action: "suspend",
     reason: formData.get("reason") ? (formData.get("reason") as string) : undefined,
-    internalNote: formData.get("internalNote") ? (formData.get("internalNote") as string) : undefined,
+    internalNote: formData.get("internalNote")
+      ? (formData.get("internalNote") as string)
+      : undefined,
   });
 
   if (!parsed.ok) return parsed.state;
 
   const ctx = await readAuthRequestContext();
-  const result = await suspendConsultant({ actor: admin, ipHash: ctx.ipHash }, parsed.data.consultantProfileId, parsed.data.reason ?? "", parsed.data.internalNote);
+  const result = await suspendConsultant(
+    { actor: admin, ipHash: ctx.ipHash },
+    parsed.data.consultantProfileId,
+    parsed.data.reason ?? "",
+    parsed.data.internalNote,
+  );
 
   if (result.status === "invalid_state") {
     return formError(`Cannot suspend consultant with status: ${result.currentStatus}`);
@@ -116,13 +136,20 @@ export async function reinstateConsultantAction(
     consultantProfileId: formData.get("consultantProfileId") as string,
     action: "reinstate",
     reason: formData.get("reason") ? (formData.get("reason") as string) : undefined,
-    internalNote: formData.get("internalNote") ? (formData.get("internalNote") as string) : undefined,
+    internalNote: formData.get("internalNote")
+      ? (formData.get("internalNote") as string)
+      : undefined,
   });
 
   if (!parsed.ok) return parsed.state;
 
   const ctx = await readAuthRequestContext();
-  const result = await reinstateConsultant({ actor: admin, ipHash: ctx.ipHash }, parsed.data.consultantProfileId, parsed.data.reason, parsed.data.internalNote);
+  const result = await reinstateConsultant(
+    { actor: admin, ipHash: ctx.ipHash },
+    parsed.data.consultantProfileId,
+    parsed.data.reason,
+    parsed.data.internalNote,
+  );
 
   if (result.status === "invalid_state") {
     return formError(`Cannot reinstate consultant with status: ${result.currentStatus}`);
@@ -140,7 +167,7 @@ export async function filterConsultantsAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const admin = await requireAdmin();
+  await requireAdmin();
 
   const parsed = parseForm(consultantFilterSchema, {
     status: formData.get("status") as string,

@@ -49,9 +49,12 @@ export interface ConsultantDetailRow extends ConsultantListRow {
 }
 
 /** Fetches consultants with filters for admin review. */
-export async function getConsultantsForAdmin(
-  filter: { status: string; search: string; page: number; perPage: number },
-): Promise<{ consultants: ConsultantListRow[]; total: number }> {
+export async function getConsultantsForAdmin(filter: {
+  status: string;
+  search: string;
+  page: number;
+  perPage: number;
+}): Promise<{ consultants: ConsultantListRow[]; total: number }> {
   const where: Record<string, unknown> = {};
 
   if (filter.status !== "ALL") {

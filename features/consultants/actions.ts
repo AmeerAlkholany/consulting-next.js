@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { requireConsultant } from "@/server/authz/guards";
-import { getSession } from "@/server/auth/dal";
 import { readAuthRequestContext } from "@/server/auth/request-context";
 import {
   updateConsultantProfile,
@@ -13,9 +12,7 @@ import {
   updatePricingPolicy,
   submitForVerification,
   setAcceptingBookings,
-  checkCompleteness,
 } from "@/server/services/consultants";
-import { getConsultantProfile } from "@/server/dal/consultant-profile";
 import {
   consultantProfileSchema,
   qualificationSchema,
@@ -59,7 +56,6 @@ export async function updateConsultantProfileAction(
 
   if (!parsed.ok) return parsed.state;
 
-  const ctx = await readAuthRequestContext();
   const result = await updateConsultantProfile(consultant, parsed.data);
 
   if ("status" in result && result.status !== "ok") {

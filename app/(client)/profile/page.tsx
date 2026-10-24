@@ -47,7 +47,9 @@ export default async function ClientProfilePage() {
             </label>
             <p id="languages" className="text-sm text-muted-foreground">
               {profile?.languageIds.length
-                ? profile.languageIds.map((code) => LANGUAGES.find((l) => l.code === code)?.name ?? code).join(", ")
+                ? profile.languageIds
+                    .map((code) => LANGUAGES.find((l) => l.code === code)?.name ?? code)
+                    .join(", ")
                 : "None selected"}
             </p>
           </div>
@@ -59,7 +61,9 @@ export default async function ClientProfilePage() {
           <CardTitle>Security</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Password management and session controls are implemented in Step 6.</p>
+          <p className="text-sm text-muted-foreground">
+            Password management and session controls are implemented in Step 6.
+          </p>
         </CardContent>
       </Card>
 
@@ -68,7 +72,9 @@ export default async function ClientProfilePage() {
           <CardTitle>Danger Zone</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Account deletion is implemented in Step 6.</p>
+          <p className="text-sm text-muted-foreground">
+            Account deletion is implemented in Step 6.
+          </p>
         </CardContent>
       </Card>
     </Container>

@@ -226,10 +226,21 @@ export const protectedPathPrefixes = [
  * The set of path prefixes that are public marketing / discovery routes.
  * Visitors may reach these without signing in.
  */
-export const publicPathPrefixes = ["/", "/consultants", "/legal", "/help", "/crisis-resources"] as const;
+export const publicPathPrefixes = [
+  "/",
+  "/consultants",
+  "/legal",
+  "/help",
+  "/crisis-resources",
+] as const;
 
 /**
  * The set of path prefixes that are auth-only (login / register / reset).
  * Signed-in users are redirected away from these.
  */
-export const authOnlyPathPrefixes = ["/login", "/register", "/forgot-password", "/reset-password"] as const;
+export const authOnlyPathPrefixes = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+] as const;

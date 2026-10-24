@@ -17,7 +17,6 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
-
 /**
  * Role-scoped application shell (IMPLEMENTATION.md Step 5).
  *
@@ -118,9 +117,7 @@ export function AppShell({ user, navigation, children }: AppShellProps) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 md:p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

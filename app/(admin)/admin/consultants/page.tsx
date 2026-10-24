@@ -4,13 +4,21 @@ import { Container } from "@/components/layout/container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, MoreHorizontal } from "lucide-react";
+import { Search, MoreHorizontal } from "lucide-react";
 
 export default async function AdminConsultantsPage() {
-  const admin = await requireAdmin();
-  const { consultants, total } = await getConsultantsForAdmin({ status: "ALL", search: "", page: 1, perPage: 20 });
+  await requireAdmin();
+  const { consultants } = await getConsultantsForAdmin({
+    status: "ALL",
+    search: "",
+    page: 1,
+    perPage: 20,
+  });
 
-  const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "success" }> = {
+  const statusConfig: Record<
+    string,
+    { label: string; variant: "default" | "secondary" | "destructive" | "success" }
+  > = {
     PENDING: { label: "Pending", variant: "default" },
     APPROVED: { label: "Approved", variant: "success" },
     REJECTED: { label: "Rejected", variant: "destructive" },
@@ -23,7 +31,9 @@ export default async function AdminConsultantsPage() {
     <Container className="flex flex-col gap-6 py-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Consultant Verification</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Consultant Verification
+          </h1>
           <p className="text-sm text-muted-foreground">{pendingCount} pending review</p>
         </div>
       </div>
@@ -56,22 +66,39 @@ export default async function AdminConsultantsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="p-3 text-left text-sm font-medium text-muted-foreground">Consultant</th>
-                    <th className="p-3 text-left text-sm font-medium text-muted-foreground">Email</th>
-                    <th className="w-36 p-3 text-left text-sm font-medium text-muted-foreground">Status</th>
-                    <th className="w-48 p-3 text-left text-sm font-medium text-muted-foreground">Specializations</th>
-                    <th className="w-36 p-3 text-left text-sm font-medium text-muted-foreground">Price</th>
-                    <th className="w-48 p-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
+                    <th className="p-3 text-left text-sm font-medium text-muted-foreground">
+                      Consultant
+                    </th>
+                    <th className="p-3 text-left text-sm font-medium text-muted-foreground">
+                      Email
+                    </th>
+                    <th className="w-36 p-3 text-left text-sm font-medium text-muted-foreground">
+                      Status
+                    </th>
+                    <th className="w-48 p-3 text-left text-sm font-medium text-muted-foreground">
+                      Specializations
+                    </th>
+                    <th className="w-36 p-3 text-left text-sm font-medium text-muted-foreground">
+                      Price
+                    </th>
+                    <th className="w-48 p-3 text-right text-sm font-medium text-muted-foreground">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {consultants.map((c) => {
-                    const s = statusConfig[c.verificationStatus] ?? { label: c.verificationStatus, variant: "default" };
+                    const s = statusConfig[c.verificationStatus] ?? {
+                      label: c.verificationStatus,
+                      variant: "default",
+                    };
                     return (
                       <tr key={c.id} className="border-b border-border">
                         <td className="p-3">
                           <div className="font-medium">{c.fullName}</div>
-                          <div className="text-sm text-muted-foreground font-mono">{c.headline}</div>
+                          <div className="text-sm text-muted-foreground font-mono">
+                            {c.headline}
+                          </div>
                         </td>
                         <td className="p-3 text-sm text-muted-foreground">{c.email}</td>
                         <td className="p-3">
@@ -90,21 +117,41 @@ export default async function AdminConsultantsPage() {
                             </Button>
                             {c.verificationStatus === "PENDING" && (
                               <>
-                                <Button variant="ghost" size="sm" className="text-success" onClick={() => {}}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-success"
+                                  onClick={() => {}}
+                                >
                                   Approve
                                 </Button>
-                                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => {}}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive"
+                                  onClick={() => {}}
+                                >
                                   Reject
                                 </Button>
                               </>
                             )}
                             {c.verificationStatus === "APPROVED" && (
-                              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => {}}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive"
+                                onClick={() => {}}
+                              >
                                 Suspend
                               </Button>
                             )}
                             {c.verificationStatus === "SUSPENDED" && (
-                              <Button variant="ghost" size="sm" className="text-success" onClick={() => {}}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-success"
+                                onClick={() => {}}
+                              >
                                 Reinstate
                               </Button>
                             )}

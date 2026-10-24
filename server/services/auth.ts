@@ -3,7 +3,11 @@ import "server-only";
 import { db } from "@/db/client";
 import { env } from "@/config/env";
 import { authRateLimits, verificationTokenPolicy } from "@/config/security";
-import { evaluateLockout, registerFailedLogin, type SessionCookieDescriptor } from "@/lib/auth-policy";
+import {
+  evaluateLockout,
+  registerFailedLogin,
+  type SessionCookieDescriptor,
+} from "@/lib/auth-policy";
 import type {
   LoginInput,
   RegisterInput,
@@ -408,8 +412,7 @@ export async function endAllSessions(userId: string): Promise<number> {
 export type AuthTokenType = "EMAIL_VERIFICATION" | "PASSWORD_RESET";
 
 export type VerifyEmailOutcome =
-  | { status: "verified"; userId: string; email: string }
-  | { status: "invalid_token" };
+  { status: "verified"; userId: string; email: string } | { status: "invalid_token" };
 
 export type TokenInspection = { status: "usable"; expiresAt: Date } | { status: "invalid" };
 
@@ -426,7 +429,12 @@ export async function inspectAuthToken(
 ): Promise<TokenInspection> {
   const token = await db.verificationToken.findUnique({
     where: { tokenHash: hashOpaqueToken(rawToken) },
-    select: { type: true, consumedAt: true, expiresAt: true, user: { select: { deletedAt: true } } },
+    select: {
+      type: true,
+      consumedAt: true,
+      expiresAt: true,
+      user: { select: { deletedAt: true } },
+    },
   });
 
   if (
@@ -516,7 +524,6 @@ export function touchSession(session: SessionRecord): Promise<SessionCookieDescr
   return renewSessionIfStale(session);
 }
 
-
 export type RequestResetOutcome = { status: "accepted" };
 
 /**
@@ -586,7 +593,6 @@ export async function requestPasswordReset(
 
   return { status: "accepted" };
 }
-
 
 export type ResetPasswordOutcome = { status: "reset"; email: string } | { status: "invalid_token" };
 
@@ -673,7 +679,11 @@ export type ResendVerificationOutcome = { status: "sent" } | { status: "already_
  * sent mail they do not need.
  */
 export async function resendEmailVerification(userId: string): Promise<ResendVerificationOutcome> {
-  await enforceRateLimit(limiters.resendVerificationPerUser, userId, "resend_verification.per_user");
+  await enforceRateLimit(
+    limiters.resendVerificationPerUser,
+    userId,
+    "resend_verification.per_user",
+  );
 
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -720,4 +730,3 @@ export async function resendEmailVerification(userId: string): Promise<ResendVer
 
   return { status: "sent" };
 }
-

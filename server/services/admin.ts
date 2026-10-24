@@ -2,9 +2,8 @@ import "server-only";
 
 import { db } from "@/db/client";
 import { logger } from "@/server/logger";
-import { AuthorizationError, NotFoundError } from "@/server/errors";
+import { AuthorizationError } from "@/server/errors";
 import { writeAuditLog, type AuditContext, type AuditAction } from "./audit";
-import type { VerificationDecisionInput } from "@/schemas/admin";
 
 /**
  * Admin service for consultant verification (IMPLEMENTATION.md Step 9).
@@ -47,7 +46,13 @@ export async function approveConsultant(
   reason?: string | null,
   internalNote?: string | null,
 ): Promise<DecisionOutcome> {
-  return updateVerificationStatus(ctx, consultantProfileId, "APPROVED", reason ?? undefined, internalNote ?? undefined);
+  return updateVerificationStatus(
+    ctx,
+    consultantProfileId,
+    "APPROVED",
+    reason ?? undefined,
+    internalNote ?? undefined,
+  );
 }
 
 /** Rejects a consultant. */
@@ -57,7 +62,13 @@ export async function rejectConsultant(
   reason: string,
   internalNote?: string | null,
 ): Promise<DecisionOutcome> {
-  return updateVerificationStatus(ctx, consultantProfileId, "REJECTED", reason, internalNote ?? undefined);
+  return updateVerificationStatus(
+    ctx,
+    consultantProfileId,
+    "REJECTED",
+    reason,
+    internalNote ?? undefined,
+  );
 }
 
 /** Suspends a consultant's verification. */
@@ -67,7 +78,13 @@ export async function suspendConsultant(
   reason: string,
   internalNote?: string | null,
 ): Promise<DecisionOutcome> {
-  return updateVerificationStatus(ctx, consultantProfileId, "SUSPENDED", reason, internalNote ?? undefined);
+  return updateVerificationStatus(
+    ctx,
+    consultantProfileId,
+    "SUSPENDED",
+    reason,
+    internalNote ?? undefined,
+  );
 }
 
 /** Reinstates a suspended consultant. */
@@ -77,7 +94,13 @@ export async function reinstateConsultant(
   reason?: string | null,
   internalNote?: string | null,
 ): Promise<DecisionOutcome> {
-  return updateVerificationStatus(ctx, consultantProfileId, "APPROVED", reason ?? undefined, internalNote ?? undefined);
+  return updateVerificationStatus(
+    ctx,
+    consultantProfileId,
+    "APPROVED",
+    reason ?? undefined,
+    internalNote ?? undefined,
+  );
 }
 
 /** Core verification status update with transition validation. */
@@ -91,14 +114,23 @@ async function updateVerificationStatus(
   const result = await db.$transaction(async (tx) => {
     const profile = await tx.consultantProfile.findUnique({
       where: { id: consultantProfileId },
-      select: { id: true, userId: true, verificationStatus: true, publishedAt: true, rejectionReason: true },
+      select: {
+        id: true,
+        userId: true,
+        verificationStatus: true,
+        publishedAt: true,
+        rejectionReason: true,
+      },
     });
 
     if (!profile) return { status: "not_found" } as NotFoundResult;
 
     const allowed = validTransitions[profile.verificationStatus] ?? [];
     if (!allowed.includes(newStatus)) {
-      return { status: "invalid_state", currentStatus: profile.verificationStatus } as InvalidStateResult;
+      return {
+        status: "invalid_state",
+        currentStatus: profile.verificationStatus,
+      } as InvalidStateResult;
     }
 
     // Prevent admin from acting on their own profile
@@ -127,7 +159,11 @@ async function updateVerificationStatus(
       data,
     });
 
-    return { status: "ok" as const, consultantProfileId: profile.id, verificationStatus: newStatus } as DecisionResult;
+    return {
+      status: "ok" as const,
+      consultantProfileId: profile.id,
+      verificationStatus: newStatus,
+    } as DecisionResult;
   });
 
   if (result.status === "ok") {
@@ -141,11 +177,19 @@ async function updateVerificationStatus(
       action: actionMap[result.verificationStatus],
       entityType: "ConsultantProfile",
       entityId: result.consultantProfileId,
-      metadata: { verificationStatus: result.verificationStatus, reason: reason ?? null, internalNote: internalNote ?? null },
+      metadata: {
+        verificationStatus: result.verificationStatus,
+        reason: reason ?? null,
+        internalNote: internalNote ?? null,
+      },
     });
 
     logger.info(
-      { actorId: ctx.actor.id, consultantProfileId: result.consultantProfileId, newStatus: result.verificationStatus },
+      {
+        actorId: ctx.actor.id,
+        consultantProfileId: result.consultantProfileId,
+        newStatus: result.verificationStatus,
+      },
       "consultant verification status updated",
     );
   }

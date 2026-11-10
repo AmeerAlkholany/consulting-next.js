@@ -50,3 +50,4 @@ export default async function ConsultantAppointmentDetailPage({ params }: PagePr
     </Container>
   );
 }
+

@@ -111,3 +111,4 @@ export function decryptText(envelope: string): string | null {
     return null;
   }
 }
+

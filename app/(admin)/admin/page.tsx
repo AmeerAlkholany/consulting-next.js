@@ -1,153 +1,108 @@
 import "server-only";
 
 import { requireAdmin } from "@/server/authz/guards";
-import { db } from "@/db/client";
+import { getPlatformStatistics } from "@/server/dal/admin";
 import { Container } from "@/components/layout/container";
+import { StatsCards } from "@/features/admin/stats-cards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, FileText, ClipboardList, Activity } from "lucide-react";
 import Link from "next/link";
+import { Users, CalendarCheck, Shield, ArrowRight } from "lucide-react";
 
 export const metadata = {
   title: "Admin Dashboard",
-  description: "Administer the platform.",
+  description: "Platform oversight, user management, and audit inspection.",
 };
 
 export default async function AdminDashboardPage() {
   await requireAdmin();
 
-  const [totalUsers, pendingConsultants, totalAppointments, pendingNotifications] =
-    await Promise.all([
-      db.user.count(),
-      db.consultantProfile.count({
-        where: { verificationStatus: "PENDING" },
-      }),
-      db.appointment.count(),
-      db.notification.count({
-        where: { readAt: null },
-      }),
-    ]);
-
-  const recentLogs = await db.auditLog.findMany({
-    take: 5,
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      action: true,
-      entityType: true,
-      entityId: true,
-      createdAt: true,
-      actorUser: { select: { fullName: true } },
-    },
-  });
-
-  function formatDate(date: Date): string {
-    return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(date));
+  let stats;
+  try {
+    stats = await getPlatformStatistics();
+  } catch (_err: unknown) {
+    stats = null;
   }
 
   return (
-    <Container className="flex flex-col gap-6 py-8">
+    <Container className="py-8 space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Admin Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Platform overview and management.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Platform Administration
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          System telemetry, operational controls, and compliance audit trail.
+        </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totalUsers}</p>
+      {stats ? (
+        <StatsCards stats={stats} />
+      ) : (
+        <Card className="border-destructive/20 bg-destructive/5">
+          <CardContent className="py-4 text-sm text-muted-foreground">
+            Platform statistics temporarily unavailable.
           </CardContent>
         </Card>
+      )}
 
+      <div className="grid gap-6 md:grid-cols-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-medium">Pending Reviews</CardTitle>
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              User Directory
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{pendingConsultants}</p>
-            <Button asChild variant="link" className="px-0 h-auto text-sm">
-              <Link href="/admin/consultants">Review now</Link>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Review accounts, inspect roles, adjust user statuses, or revoke active sessions.
+            </p>
+            <Button asChild variant="outline" size="sm" className="w-full justify-between">
+              <Link href="/admin/users">
+                Manage Users
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-medium">Appointments</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+              Appointment Oversight
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totalAppointments}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-medium">Unread Notifications</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{pendingNotifications}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            <Button asChild variant="outline">
-              <Link href="/admin/consultants">Consultant Verification</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <a href="/admin/users">User Management</a>
-            </Button>
-            <Button asChild variant="outline">
-              <a href="/admin/audit-log">Audit Log</a>
-            </Button>
-            <Button asChild variant="outline">
-              <a href="/admin/specializations">Specializations</a>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Supervise booking schedules across the platform with zero clinical note leakage.
+            </p>
+            <Button asChild variant="outline" size="sm" className="w-full justify-between">
+              <Link href="/admin/appointments">
+                Inspect Appointments
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Shield className="h-4 w-4 text-muted-foreground" />
+              Audit Log Viewer
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentLogs.map((log) => (
-                <div key={log.id} className="flex items-start gap-3 text-sm">
-                  <Badge variant="outline" className="shrink-0">
-                    {log.action.replace(/_/g, " ").toLowerCase()}
-                  </Badge>
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate">
-                      <span className="font-medium">{log.actorUser.fullName}</span> acted on{" "}
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {log.entityType}:{log.entityId.slice(0, 8)}...
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">{formatDate(log.createdAt)}</p>
-                  </div>
-                </div>
-              ))}
-              {recentLogs.length === 0 && (
-                <p className="text-sm text-muted-foreground">No recent activity.</p>
-              )}
-            </div>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Review immutable audit trail of administrative modifications and platform actions.
+            </p>
+            <Button asChild variant="outline" size="sm" className="w-full justify-between">
+              <Link href="/admin/audit-log">
+                Open Audit Log
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

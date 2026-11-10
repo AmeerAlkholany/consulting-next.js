@@ -62,3 +62,4 @@ export function PendingRequests({ requests }: PendingRequestsProps) {
     </Card>
   );
 }
+

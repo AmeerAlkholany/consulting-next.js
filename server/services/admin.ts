@@ -2,17 +2,19 @@ import "server-only";
 
 import { db } from "@/db/client";
 import { logger } from "@/server/logger";
-import { AuthorizationError } from "@/server/errors";
+import { AuthorizationError, NotFoundError, ValidationError } from "@/server/errors";
 import { writeAuditLog, type AuditContext, type AuditAction } from "./audit";
+import { revokeAllSessions } from "@/server/auth/session";
+import type { UserStatus, UserRole } from "@/db/generated/prisma/client";
+import {
+  type UserStatusInput,
+  type RoleChangeInput,
+  type AdminCancelAppointmentInput,
+} from "@/schemas/admin";
 
 /**
- * Admin service for consultant verification (IMPLEMENTATION.md Step 9).
- *
- * Legal transitions:
- * - PENDING → APPROVED | REJECTED
- * - APPROVED → SUSPENDED
- * - REJECTED → PENDING (by consultant resubmission, handled in Step 8)
- * - SUSPENDED → APPROVED (reinstate)
+ * Admin service for consultant verification, user management, and appointment oversight
+ * (IMPLEMENTATION.md Step 9 & Step 15).
  */
 
 export interface DecisionResult {
@@ -195,4 +197,222 @@ async function updateVerificationStatus(
   }
 
   return result;
+}
+
+/**
+ * Changes a user's account status (ACTIVE, SUSPENDED, DEACTIVATED).
+ * BR-12: Suspending a user account revokes every session immediately.
+ * Guardrails: An admin cannot modify their own status or suspend the last active admin.
+ */
+export async function setUserStatus(
+  ctx: AuditContext,
+  input: UserStatusInput,
+): Promise<{ status: "ok"; userId: string; userStatus: UserStatus }> {
+  if (ctx.actor.role !== "ADMIN") {
+    throw new AuthorizationError("Only administrators can modify user status.");
+  }
+
+  if (ctx.actor.id === input.userId) {
+    throw new ValidationError("CANNOT_MODIFY_SELF: Administrators cannot modify their own status.");
+  }
+
+  const targetUser = await db.user.findUnique({
+    where: { id: input.userId },
+    select: { id: true, role: true, status: true, email: true },
+  });
+
+  if (!targetUser) {
+    throw new NotFoundError("User not found.");
+  }
+
+  if (targetUser.role === "ADMIN" && input.status !== "ACTIVE") {
+    const activeAdminCount = await db.user.count({
+      where: { role: "ADMIN", status: "ACTIVE" },
+    });
+    if (activeAdminCount <= 1) {
+      throw new ValidationError("LAST_ADMIN: Cannot suspend or deactivate the last active administrator.");
+    }
+  }
+
+  await db.user.update({
+    where: { id: input.userId },
+    data: { status: input.status as UserStatus },
+  });
+
+  // BR-12: Suspending/deactivating revokes all user sessions immediately
+  if (input.status === "SUSPENDED" || input.status === "DEACTIVATED") {
+    await revokeAllSessions(input.userId);
+  }
+
+  const auditAction: AuditAction =
+    input.status === "ACTIVE" ? "USER_REACTIVATED" : "USER_SUSPENDED";
+
+  await writeAuditLog(ctx, {
+    action: auditAction,
+    entityType: "User",
+    entityId: input.userId,
+    metadata: {
+      previousStatus: targetUser.status,
+      newStatus: input.status,
+      reason: input.reason,
+    },
+  });
+
+  logger.info(
+    { actorId: ctx.actor.id, targetUserId: input.userId, newStatus: input.status },
+    "user status updated by admin",
+  );
+
+  return { status: "ok", userId: input.userId, userStatus: input.status as UserStatus };
+}
+
+/**
+ * Changes a user's role (CLIENT, CONSULTANT, ADMIN).
+ * ADR: Client becoming consultant keeps client profile; consultant becoming client unpublishes consultant profile.
+ * Guardrails: An admin cannot change their own role or demote the last active admin.
+ */
+export async function changeUserRole(
+  ctx: AuditContext,
+  input: RoleChangeInput,
+): Promise<{ status: "ok"; userId: string; role: UserRole }> {
+  if (ctx.actor.role !== "ADMIN") {
+    throw new AuthorizationError("Only administrators can modify user roles.");
+  }
+
+  if (ctx.actor.id === input.userId) {
+    throw new ValidationError("CANNOT_MODIFY_SELF: Administrators cannot modify their own role.");
+  }
+
+  const targetUser = await db.user.findUnique({
+    where: { id: input.userId },
+    include: {
+      clientProfile: true,
+      consultantProfile: true,
+    },
+  });
+
+  if (!targetUser) {
+    throw new NotFoundError("User not found.");
+  }
+
+  if (targetUser.role === input.role) {
+    return { status: "ok", userId: input.userId, role: targetUser.role };
+  }
+
+  if (targetUser.role === "ADMIN") {
+    const activeAdminCount = await db.user.count({
+      where: { role: "ADMIN", status: "ACTIVE" },
+    });
+    if (activeAdminCount <= 1) {
+      throw new ValidationError("LAST_ADMIN: Cannot demote the last active administrator.");
+    }
+  }
+
+  await db.$transaction(async (tx) => {
+    // Role change rotates sessions
+    await tx.session.updateMany({
+      where: { userId: input.userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    if (input.role === "CLIENT" && !targetUser.clientProfile) {
+      await tx.clientProfile.create({
+        data: {
+          userId: targetUser.id,
+          displayName: targetUser.fullName.split(" ")[0] || targetUser.fullName,
+        },
+      });
+    }
+
+    if (targetUser.role === "CONSULTANT" && input.role !== "CONSULTANT" && targetUser.consultantProfile) {
+      // Unpublish consultant profile
+      await tx.consultantProfile.update({
+        where: { id: targetUser.consultantProfile.id },
+        data: { isAcceptingBookings: false },
+      });
+    }
+
+    await tx.user.update({
+      where: { id: input.userId },
+      data: { role: input.role as UserRole },
+    });
+  });
+
+  await writeAuditLog(ctx, {
+    action: "USER_ROLE_CHANGED",
+    entityType: "User",
+    entityId: input.userId,
+    metadata: {
+      previousRole: targetUser.role,
+      newRole: input.role,
+      reason: input.reason,
+    },
+  });
+
+  logger.info(
+    { actorId: ctx.actor.id, targetUserId: input.userId, newRole: input.role },
+    "user role changed by admin",
+  );
+
+  return { status: "ok", userId: input.userId, role: input.role as UserRole };
+}
+
+/**
+ * Cancels an appointment from administrative oversight.
+ * Reason is required and audit log is recorded.
+ */
+export async function adminCancelAppointment(
+  ctx: AuditContext,
+  input: AdminCancelAppointmentInput,
+): Promise<{ status: "ok"; appointmentId: string }> {
+  if (ctx.actor.role !== "ADMIN") {
+    throw new AuthorizationError("Only administrators can intervene in appointments.");
+  }
+
+  const appointment = await db.appointment.findUnique({
+    where: { id: input.appointmentId },
+    select: {
+      id: true,
+      status: true,
+      clientProfileId: true,
+      consultantProfileId: true,
+    },
+  });
+
+  if (!appointment) {
+    throw new NotFoundError("Appointment not found.");
+  }
+
+  if (appointment.status === "CANCELLED" || appointment.status === "COMPLETED") {
+    throw new ValidationError(`INVALID_STATE: Cannot cancel an appointment in terminal state (${appointment.status}).`);
+  }
+
+  const updated = await db.appointment.update({
+    where: { id: input.appointmentId },
+    data: {
+      status: "CANCELLED",
+      cancelledAt: new Date(),
+      cancelledById: ctx.actor.id,
+      cancelledBy: "ADMIN",
+      cancellationReason: input.reason,
+    },
+    select: { id: true },
+  });
+
+  await writeAuditLog(ctx, {
+    action: "APPOINTMENT_CANCELLED_BY_ADMIN",
+    entityType: "Appointment",
+    entityId: updated.id,
+    metadata: {
+      previousStatus: appointment.status,
+      cancellationReason: input.reason,
+    },
+  });
+
+  logger.info(
+    { actorId: ctx.actor.id, appointmentId: updated.id, reason: input.reason },
+    "appointment cancelled by admin",
+  );
+
+  return { status: "ok", appointmentId: updated.id };
 }

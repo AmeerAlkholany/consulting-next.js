@@ -15,7 +15,6 @@ import {
   upsertAppointmentNote,
   deleteAppointmentNote,
 } from "@/server/services/appointment-notes";
-import { encryptText, decryptText } from "@/lib/crypto";
 import type { SessionUser } from "@/server/auth/dal";
 
 describe("Consultant appointment workspace integration tests", () => {
@@ -31,7 +30,6 @@ describe("Consultant appointment workspace integration tests", () => {
   let consultantAUser: SessionUser;
   let consultantBUser: SessionUser;
   let clientUser: SessionUser;
-  let adminUser: SessionUser;
 
   let consultantAProfileId: string;
   let consultantBProfileId: string;
@@ -143,7 +141,7 @@ describe("Consultant appointment workspace integration tests", () => {
     clientProfileId = uClient.clientProfile!.id;
 
     // 4. Admin
-    const uAdmin = await prisma.user.create({
+    await prisma.user.create({
       data: {
         email: "admin@example.com",
         fullName: "Super Admin",
@@ -152,15 +150,6 @@ describe("Consultant appointment workspace integration tests", () => {
         status: "ACTIVE",
       },
     });
-    adminUser = {
-      id: uAdmin.id,
-      email: uAdmin.email,
-      fullName: uAdmin.fullName,
-      role: "ADMIN",
-      status: "ACTIVE",
-      timezone: "UTC",
-      emailVerifiedAt: new Date(),
-    };
   });
 
   describe("Lifecycle state transitions and guards", () => {
@@ -556,3 +545,4 @@ describe("Consultant appointment workspace integration tests", () => {
     });
   });
 });
+

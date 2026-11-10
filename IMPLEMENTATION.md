@@ -1,6 +1,6 @@
 # Implementation Plan — Psychological Consultation Booking Platform
 
-**Status:** Plan only. Nothing in this document has been implemented.
+**Status:** Steps 1 through 11 completed and verified. Next step: Step 12 (Booking system).
 **Companion documents:** [ARCHITECTURE.md](./ARCHITECTURE.md) (the design this plan realizes) and [ADR.md](./ADR.md) (why each choice was made).
 
 ---
@@ -40,32 +40,32 @@
 
 ## Step map
 
-| #   | Step                                       | Depends on     |
-| --- | ------------------------------------------ | -------------- |
-| 1   | Project foundation and tooling baseline    | —              |
-| 2   | Shared infrastructure and design system    | 1              |
-| 3   | Database, Prisma schema, and seed          | 1              |
-| 4   | Authentication                             | 2, 3           |
-| 5   | Authorization, RBAC, and route protection  | 4              |
-| 6   | Client profiles                            | 5              |
-| 7   | Specializations and languages taxonomy     | 5              |
-| 8   | Consultant profiles and onboarding         | 5, 7           |
-| 9   | Consultant verification (admin)            | 8              |
-| 10  | Consultant discovery                       | 8, 9           |
-| 11  | Availability system                        | 8, 9           |
-| 12  | Booking system                             | 6, 10, 11      |
-| 13  | Client appointment workspace               | 12             |
-| 14  | Consultant appointment workspace           | 12             |
-| 15  | Admin console                              | 9, 13, 14      |
-| 16  | Notifications                              | 12, 13, 14, 15 |
-| 17  | Reviews and ratings                        | 13, 14         |
-| 18  | Scheduled jobs and email delivery          | 16             |
-| 19  | Security hardening                         | 1–18           |
-| 20  | UX states, accessibility, and error polish | 2, 5–17        |
-| 21  | Test suite completion                      | 1–20           |
-| 22  | Performance optimization                   | 21             |
-| 23  | Production preparation                     | 19, 21, 22     |
-| 24  | Final audit                                | 1–23           |
+| #   | Step                                       | Depends on     | Status      |
+| --- | ------------------------------------------ | -------------- | ----------- |
+| 1   | Project foundation and tooling baseline    | —              | Completed   |
+| 2   | Shared infrastructure and design system    | 1              | Completed   |
+| 3   | Database, Prisma schema, and seed          | 1              | Completed   |
+| 4   | Authentication                             | 2, 3           | Completed   |
+| 5   | Authorization, RBAC, and route protection  | 4              | Completed   |
+| 6   | Client profiles                            | 5              | Completed   |
+| 7   | Specializations and languages taxonomy     | 5              | Completed   |
+| 8   | Consultant profiles and onboarding         | 5, 7           | Completed   |
+| 9   | Consultant verification (admin)            | 8              | Completed   |
+| 10  | Consultant discovery                       | 8, 9           | Completed   |
+| 11  | Availability system                        | 8, 9           | Completed   |
+| 12  | Booking system                             | 6, 10, 11      | Up Next     |
+| 13  | Client appointment workspace               | 12             | Pending     |
+| 14  | Consultant appointment workspace           | 12             | Pending     |
+| 15  | Admin console                              | 9, 13, 14      | Pending     |
+| 16  | Notifications                              | 12, 13, 14, 15 | Pending     |
+| 17  | Reviews and ratings                        | 13, 14         | Pending     |
+| 18  | Scheduled jobs and email delivery          | 16             | Pending     |
+| 19  | Security hardening                         | 1–18           | Pending     |
+| 20  | UX states, accessibility, and error polish | 2, 5–17        | Pending     |
+| 21  | Test suite completion                      | 1–20           | Pending     |
+| 22  | Performance optimization                   | 21             | Pending     |
+| 23  | Production preparation                     | 19, 21, 22     | Pending     |
+| 24  | Final audit                                | 1–23           | Pending     |
 
 ---
 

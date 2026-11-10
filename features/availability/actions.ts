@@ -37,19 +37,26 @@ export async function upsertAvailabilityRuleAction(
 
   if (!parsed.ok) return parsed.state;
 
-  await upsertRule(consultant, {
-    consultantProfileId: profile.id,
-    weekday: parsed.data.weekday,
-    startMinute: parsed.data.startMinute,
-    endMinute: parsed.data.endMinute,
-    effectiveFrom: parsed.data.effectiveFrom ? new Date(parsed.data.effectiveFrom) : null,
-    effectiveUntil: parsed.data.effectiveUntil ? new Date(parsed.data.effectiveUntil) : null,
-    isActive: parsed.data.isActive,
-  });
+  try {
+    await upsertRule(consultant, {
+      consultantProfileId: profile.id,
+      weekday: parsed.data.weekday,
+      startMinute: parsed.data.startMinute,
+      endMinute: parsed.data.endMinute,
+      effectiveFrom: parsed.data.effectiveFrom ? new Date(parsed.data.effectiveFrom) : null,
+      effectiveUntil: parsed.data.effectiveUntil ? new Date(parsed.data.effectiveUntil) : null,
+      isActive: parsed.data.isActive,
+    });
 
-  updateTag(`availability:${profile.id}`);
-  revalidatePath("/consultant/availability");
-  return formSuccess("Availability rule saved.");
+    updateTag(`availability:${profile.id}`);
+    revalidatePath("/consultant/availability");
+    return formSuccess("Availability rule saved.");
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return formError(err.message);
+    }
+    return formError("Failed to save availability rule.");
+  }
 }
 
 export async function deleteAvailabilityRuleAction(
@@ -64,11 +71,17 @@ export async function deleteAvailabilityRuleAction(
   const id = formData.get("id") as string;
   if (!id) return formError("Missing rule ID.");
 
-  await deleteRule(consultant, profile.id, id);
-
-  updateTag(`availability:${profile.id}`);
-  revalidatePath("/consultant/availability");
-  return formSuccess("Availability rule deleted.");
+  try {
+    await deleteRule(consultant, profile.id, id);
+    updateTag(`availability:${profile.id}`);
+    revalidatePath("/consultant/availability");
+    return formSuccess("Availability rule deleted.");
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return formError(err.message);
+    }
+    return formError("Failed to delete availability rule.");
+  }
 }
 
 export async function upsertAvailabilityExceptionAction(
@@ -91,19 +104,26 @@ export async function upsertAvailabilityExceptionAction(
 
   if (!parsed.ok) return parsed.state;
 
-  await upsertException(consultant, {
-    consultantProfileId: profile.id,
-    id: parsed.data.id,
-    date: new Date(parsed.data.date),
-    type: parsed.data.type,
-    startMinute: parsed.data.startMinute ?? null,
-    endMinute: parsed.data.endMinute ?? null,
-    reason: parsed.data.reason ?? null,
-  });
+  try {
+    await upsertException(consultant, {
+      consultantProfileId: profile.id,
+      id: parsed.data.id,
+      date: new Date(parsed.data.date),
+      type: parsed.data.type,
+      startMinute: parsed.data.startMinute ?? null,
+      endMinute: parsed.data.endMinute ?? null,
+      reason: parsed.data.reason ?? null,
+    });
 
-  updateTag(`availability:${profile.id}`);
-  revalidatePath("/consultant/availability");
-  return formSuccess("Availability exception saved.");
+    updateTag(`availability:${profile.id}`);
+    revalidatePath("/consultant/availability");
+    return formSuccess("Availability exception saved.");
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return formError(err.message);
+    }
+    return formError("Failed to save availability exception.");
+  }
 }
 
 export async function deleteAvailabilityExceptionAction(
@@ -118,11 +138,17 @@ export async function deleteAvailabilityExceptionAction(
   const id = formData.get("id") as string;
   if (!id) return formError("Missing exception ID.");
 
-  await deleteException(consultant, profile.id, id);
-
-  updateTag(`availability:${profile.id}`);
-  revalidatePath("/consultant/availability");
-  return formSuccess("Availability exception deleted.");
+  try {
+    await deleteException(consultant, profile.id, id);
+    updateTag(`availability:${profile.id}`);
+    revalidatePath("/consultant/availability");
+    return formSuccess("Availability exception deleted.");
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return formError(err.message);
+    }
+    return formError("Failed to delete availability exception.");
+  }
 }
 
 export async function copyWeekAction(

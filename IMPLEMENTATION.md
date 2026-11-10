@@ -1,6 +1,6 @@
 # Implementation Plan — Psychological Consultation Booking Platform
 
-**Status:** Steps 1 through 13 completed and verified. Next step: Step 14 (Consultant appointment workspace).
+**Status:** Steps 1 through 14 completed and verified. Next step: Step 15 (Admin console).
 **Companion documents:** [ARCHITECTURE.md](./ARCHITECTURE.md) (the design this plan realizes) and [ADR.md](./ADR.md) (why each choice was made).
 
 ---
@@ -55,8 +55,8 @@
 | 11  | Availability system                        | 8, 9           | Completed   |
 | 12  | Booking system                             | 6, 10, 11      | Completed   |
 | 13  | Client appointment workspace               | 12             | Completed   |
-| 14  | Consultant appointment workspace           | 12             | Up Next     |
-| 15  | Admin console                              | 9, 13, 14      | Pending     |
+| 14  | Consultant appointment workspace           | 12             | Completed   |
+| 15  | Admin console                              | 9, 13, 14      | Up Next     |
 | 16  | Notifications                              | 12, 13, 14, 15 | Pending     |
 | 17  | Reviews and ratings                        | 13, 14         | Pending     |
 | 18  | Scheduled jobs and email delivery          | 16             | Pending     |

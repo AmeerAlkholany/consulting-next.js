@@ -14,6 +14,13 @@ import type {
   RescheduleAppointmentInput,
 } from "@/schemas/booking";
 import { BOOKING_POLICY } from "@/config/booking";
+import { sendNotification } from "@/server/services/notifications";
+import {
+  getAppointmentRequestedTemplate,
+  getAppointmentConfirmedTemplate,
+  getAppointmentCancelledTemplate,
+  getAppointmentCompletedTemplate,
+} from "@/lib/notification-templates";
 
 export interface BookingResult {
   status: "ok";
@@ -168,6 +175,39 @@ export async function createBooking(
         },
         select: { id: true, status: true },
       });
+
+      // Emit notification & queue email outbox inside the transaction (ARCHITECTURE.md §20)
+      const consultantUser = await tx.consultantProfile.findUnique({
+        where: { id: consultantProfile.id },
+        select: { userId: true, user: { select: { email: true, fullName: true } } },
+      });
+
+      if (consultantUser) {
+        const startsAtFormatted = startsAt.toUTCString();
+        await sendNotification(
+          {
+            userId: consultantUser.userId,
+            type: "APPOINTMENT_REQUESTED",
+            payload: {
+              title: "New Booking Request",
+              message: `${clientProfile.displayName} requested an appointment on ${startsAtFormatted}`,
+              appointmentId: appointment.id,
+              link: `/consultant/appointments/${appointment.id}`,
+            },
+            emailDetails: {
+              toEmail: consultantUser.user.email,
+              template: "APPOINTMENT_REQUESTED",
+              data: getAppointmentRequestedTemplate({
+                consultantName: consultantUser.user.fullName,
+                clientName: clientProfile.displayName,
+                startsAtFormatted,
+                appointmentId: appointment.id,
+              }),
+            },
+          },
+          tx,
+        );
+      }
 
       return appointment;
     });
@@ -660,16 +700,60 @@ export async function confirmAppointment(
   }
 
   try {
-    const updated = await db.appointment.update({
-      where: {
-        id: appointmentId,
-        status: "PENDING", // Compare-and-set
-      },
-      data: {
-        status: "CONFIRMED",
-        confirmedAt: new Date(),
-      },
-      select: { id: true },
+    const updated = await db.$transaction(async (tx) => {
+      const apt = await tx.appointment.update({
+        where: {
+          id: appointmentId,
+          status: "PENDING", // Compare-and-set
+        },
+        data: {
+          status: "CONFIRMED",
+          confirmedAt: new Date(),
+        },
+        select: {
+          id: true,
+          startsAt: true,
+          clientProfile: {
+            select: {
+              userId: true,
+              displayName: true,
+              user: { select: { email: true } },
+            },
+          },
+          consultantProfile: {
+            select: {
+              user: { select: { fullName: true } },
+            },
+          },
+        },
+      });
+
+      const startsAtFormatted = apt.startsAt.toUTCString();
+      await sendNotification(
+        {
+          userId: apt.clientProfile.userId,
+          type: "APPOINTMENT_CONFIRMED",
+          payload: {
+            title: "Appointment Confirmed",
+            message: `Your appointment with Dr. ${apt.consultantProfile.user.fullName} has been confirmed.`,
+            appointmentId: apt.id,
+            link: `/appointments/${apt.id}`,
+          },
+          emailDetails: {
+            toEmail: apt.clientProfile.user.email,
+            template: "APPOINTMENT_CONFIRMED",
+            data: getAppointmentConfirmedTemplate({
+              clientName: apt.clientProfile.displayName,
+              consultantName: apt.consultantProfile.user.fullName,
+              startsAtFormatted,
+              appointmentId: apt.id,
+            }),
+          },
+        },
+        tx,
+      );
+
+      return apt;
     });
 
     logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment confirmed");
@@ -719,18 +803,60 @@ export async function declineAppointment(
     };
   }
 
-  const updated = await db.appointment.update({
-    where: {
-      id: input.appointmentId,
-      status: "PENDING", // Compare-and-set
-    },
-    data: {
-      status: "CANCELLED",
-      cancelledAt: new Date(),
-      cancelledBy: "CONSULTANT",
-      cancellationReason: reason,
-    },
-    select: { id: true },
+  const updated = await db.$transaction(async (tx) => {
+    const apt = await tx.appointment.update({
+      where: {
+        id: input.appointmentId,
+        status: "PENDING", // Compare-and-set
+      },
+      data: {
+        status: "CANCELLED",
+        cancelledAt: new Date(),
+        cancelledBy: "CONSULTANT",
+        cancellationReason: reason,
+      },
+      select: {
+        id: true,
+        clientProfile: {
+          select: {
+            userId: true,
+            displayName: true,
+            user: { select: { email: true } },
+          },
+        },
+        consultantProfile: {
+          select: {
+            user: { select: { fullName: true } },
+          },
+        },
+      },
+    });
+
+    await sendNotification(
+      {
+        userId: apt.clientProfile.userId,
+        type: "APPOINTMENT_CANCELLED",
+        payload: {
+          title: "Appointment Declined",
+          message: `Dr. ${apt.consultantProfile.user.fullName} was unable to accept your booking: ${reason}`,
+          appointmentId: apt.id,
+          link: `/appointments/${apt.id}`,
+        },
+        emailDetails: {
+          toEmail: apt.clientProfile.user.email,
+          template: "APPOINTMENT_CANCELLED",
+          data: getAppointmentCancelledTemplate({
+            recipientName: apt.clientProfile.displayName,
+            cancelledByName: `Dr. ${apt.consultantProfile.user.fullName}`,
+            reason,
+            appointmentId: apt.id,
+          }),
+        },
+      },
+      tx,
+    );
+
+    return apt;
   });
 
   logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment declined");
@@ -772,16 +898,57 @@ export async function completeAppointment(
     };
   }
 
-  const updated = await db.appointment.update({
-    where: {
-      id: appointmentId,
-      status: "CONFIRMED", // Compare-and-set
-    },
-    data: {
-      status: "COMPLETED",
-      completedAt: new Date(),
-    },
-    select: { id: true },
+  const updated = await db.$transaction(async (tx) => {
+    const apt = await tx.appointment.update({
+      where: {
+        id: appointmentId,
+        status: "CONFIRMED", // Compare-and-set
+      },
+      data: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+      },
+      select: {
+        id: true,
+        clientProfile: {
+          select: {
+            userId: true,
+            displayName: true,
+            user: { select: { email: true } },
+          },
+        },
+        consultantProfile: {
+          select: {
+            user: { select: { fullName: true } },
+          },
+        },
+      },
+    });
+
+    await sendNotification(
+      {
+        userId: apt.clientProfile.userId,
+        type: "APPOINTMENT_COMPLETED",
+        payload: {
+          title: "Session Completed",
+          message: `Your session with Dr. ${apt.consultantProfile.user.fullName} is complete. You can now leave a review.`,
+          appointmentId: apt.id,
+          link: `/appointments/${apt.id}`,
+        },
+        emailDetails: {
+          toEmail: apt.clientProfile.user.email,
+          template: "APPOINTMENT_COMPLETED",
+          data: getAppointmentCompletedTemplate({
+            clientName: apt.clientProfile.displayName,
+            consultantName: apt.consultantProfile.user.fullName,
+            appointmentId: apt.id,
+          }),
+        },
+      },
+      tx,
+    );
+
+    return apt;
   });
 
   logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment marked completed");

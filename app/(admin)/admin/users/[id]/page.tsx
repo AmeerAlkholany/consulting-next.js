@@ -31,3 +31,4 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
     </Container>
   );
 }
+

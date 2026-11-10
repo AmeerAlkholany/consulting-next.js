@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { siteConfig } from "@/config/site";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/features/notifications/notification-bell";
 import type { SessionUser } from "@/server/auth/session";
 import type { NavItem } from "@/config/nav";
 
@@ -106,7 +107,8 @@ export function AppShell({ user, navigation, children }: AppShellProps) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
+            <NotificationBell />
             <form action="/auth/logout" method="POST">
               <Button variant="outline" size="sm" type="submit">
                 <LogOut className="mr-2 h-4 w-4" />

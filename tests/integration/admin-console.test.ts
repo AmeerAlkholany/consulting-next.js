@@ -7,8 +7,6 @@ import {
 } from "@/server/services/admin";
 import {
   getAppointmentsForAdminOversight,
-  getUsersForAdmin,
-  getAuditLogsForAdmin,
 } from "@/server/dal/admin";
 import type { SessionUser } from "@/server/auth/dal";
 
@@ -327,7 +325,7 @@ describe("Admin console integration tests", () => {
       });
 
       expect(oversight.appointments).toHaveLength(1);
-      const row = oversight.appointments[0] as Record<string, unknown>;
+      const row = oversight.appointments[0] as unknown as Record<string, unknown>;
 
       // Assert by key set: clientNote and notes MUST NOT exist in the projection
       expect(row).not.toHaveProperty("clientNote");
@@ -416,3 +414,4 @@ describe("Admin console integration tests", () => {
     });
   });
 });
+

@@ -2,95 +2,61 @@ import "server-only";
 
 import { db } from "@/db/client";
 import { logger } from "@/server/logger";
-import type { NotificationType } from "@/db/generated/prisma/client";
+import type { Prisma } from "@/db/generated/prisma/client";
+import type { NotificationTypeEnum, NotificationPayload } from "@/schemas/notification";
+import { notificationPayloadSchema } from "@/schemas/notification";
+import type { EmailTemplateData } from "@/lib/notification-templates";
 
-export interface NotificationPayload {
-  appointmentId?: string;
-  consultantName?: string;
-  clientName?: string;
-  startsAt?: string;
-  reason?: string;
-  [key: string]: unknown;
+export interface CreateNotificationParams {
+  userId: string;
+  type: NotificationTypeEnum;
+  payload: NotificationPayload;
+  emailDetails?: {
+    toEmail: string;
+    template: string;
+    data: EmailTemplateData;
+  };
 }
 
 /**
- * Notification service (IMPLEMENTATION.md Step 16).
- *
- * Creates notification records in the database. Email delivery is handled by
- * the outbox drain job (Step 18).
+ * Creates an in-app Notification and an EmailOutbox row.
+ * If a Prisma TransactionClient (`tx`) is provided, operations execute within
+ * that transaction to guarantee atomic rollbacks (ARCHITECTURE.md §20).
  */
+export async function sendNotification(
+  params: CreateNotificationParams,
+  tx?: Prisma.TransactionClient,
+): Promise<{ notificationId: string }> {
+  // Validate payload before writing to ensure renderer never receives malformed json
+  const validatedPayload = notificationPayloadSchema.parse(params.payload);
 
-export async function createNotification(
-  userId: string,
-  type: NotificationType,
-  payload: NotificationPayload,
-): Promise<void> {
-  await db.notification.create({
+  const client = tx ?? db;
+
+  const notification = await client.notification.create({
     data: {
-      userId,
-      type,
-      payload: payload as never,
+      userId: params.userId,
+      type: params.type,
+      payload: validatedPayload as unknown as Prisma.InputJsonValue,
     },
-  });
-
-  logger.info({ userId, type }, "notification created");
-}
-
-export async function markAsRead(notificationId: string, userId: string): Promise<void> {
-  await db.notification.update({
-    where: { id: notificationId, userId },
-    data: { readAt: new Date() },
-  });
-}
-
-export async function markAllAsRead(userId: string): Promise<number> {
-  const result = await db.notification.updateMany({
-    where: { userId, readAt: null },
-    data: { readAt: new Date() },
-  });
-
-  logger.info({ userId, count: result.count }, "notifications marked as read");
-  return result.count;
-}
-
-export async function getUnreadCount(userId: string): Promise<number> {
-  return db.notification.count({
-    where: { userId, readAt: null },
-  });
-}
-
-export async function getUserNotifications(
-  userId: string,
-  options: { limit?: number; offset?: number } = {},
-): Promise<
-  Array<{ id: string; type: string; payload: unknown; createdAt: Date; readAt: Date | null }>
-> {
-  const { limit = 20, offset = 0 } = options;
-
-  return db.notification.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-    skip: offset,
-    select: {
-      id: true,
-      type: true,
-      payload: true,
-      createdAt: true,
-      readAt: true,
-    },
-  });
-}
-
-/** Helper to broadcast a notification to all admins. */
-export async function notifyAdmins(
-  type: NotificationType,
-  payload: NotificationPayload,
-): Promise<void> {
-  const admins = await db.user.findMany({
-    where: { role: "ADMIN", status: "ACTIVE" },
     select: { id: true },
   });
 
-  await Promise.all(admins.map((admin) => createNotification(admin.id, type, payload)));
+  if (params.emailDetails) {
+    await client.emailOutbox.create({
+      data: {
+        userId: params.userId,
+        toEmail: params.emailDetails.toEmail,
+        template: params.emailDetails.template,
+        payload: params.emailDetails.data as unknown as Prisma.InputJsonValue,
+        status: "PENDING",
+      },
+    });
+  }
+
+  logger.info(
+    { userId: params.userId, type: params.type, notificationId: notification.id },
+    "notification created and email outbox queued",
+  );
+
+  return { notificationId: notification.id };
 }

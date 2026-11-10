@@ -81,3 +81,4 @@ export default async function AdminAppointmentsPage({ searchParams }: PageProps)
     </Container>
   );
 }
+

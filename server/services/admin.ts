@@ -11,6 +11,13 @@ import {
   type RoleChangeInput,
   type AdminCancelAppointmentInput,
 } from "@/schemas/admin";
+import { sendNotification } from "@/server/services/notifications";
+import {
+  getConsultantApprovedTemplate,
+  getConsultantRejectedTemplate,
+  getConsultantSuspendedTemplate,
+  getAppointmentCancelledTemplate,
+} from "@/lib/notification-templates";
 
 /**
  * Admin service for consultant verification, user management, and appointment oversight
@@ -160,6 +167,81 @@ async function updateVerificationStatus(
       where: { id: consultantProfileId },
       data,
     });
+
+    // Send notification and email inside transaction (ARCHITECTURE.md §20)
+    const consultantUser = await tx.user.findUnique({
+      where: { id: profile.userId },
+      select: { id: true, email: true, fullName: true },
+    });
+
+    if (consultantUser) {
+      if (newStatus === "APPROVED") {
+        await sendNotification(
+          {
+            userId: consultantUser.id,
+            type: "CONSULTANT_APPROVED",
+            payload: {
+              title: "Consultant Profile Approved",
+              message: "Your qualifications have been verified. You can now accept client bookings.",
+              consultantProfileId: profile.id,
+              link: "/consultant/availability",
+            },
+            emailDetails: {
+              toEmail: consultantUser.email,
+              template: "CONSULTANT_APPROVED",
+              data: getConsultantApprovedTemplate({
+                consultantName: consultantUser.fullName,
+              }),
+            },
+          },
+          tx,
+        );
+      } else if (newStatus === "REJECTED") {
+        await sendNotification(
+          {
+            userId: consultantUser.id,
+            type: "CONSULTANT_REJECTED",
+            payload: {
+              title: "Consultant Application Decision",
+              message: `Your application could not be approved at this time: ${reason || "Does not meet current requirements"}`,
+              consultantProfileId: profile.id,
+              link: "/consultant/profile",
+            },
+            emailDetails: {
+              toEmail: consultantUser.email,
+              template: "CONSULTANT_REJECTED",
+              data: getConsultantRejectedTemplate({
+                consultantName: consultantUser.fullName,
+                reason: reason || "Does not meet current requirements",
+              }),
+            },
+          },
+          tx,
+        );
+      } else if (newStatus === "SUSPENDED") {
+        await sendNotification(
+          {
+            userId: consultantUser.id,
+            type: "CONSULTANT_SUSPENDED",
+            payload: {
+              title: "Consultant Profile Suspended",
+              message: `Your consultant verification is suspended: ${reason || "Account under review"}`,
+              consultantProfileId: profile.id,
+              link: "/consultant/profile",
+            },
+            emailDetails: {
+              toEmail: consultantUser.email,
+              template: "CONSULTANT_SUSPENDED",
+              data: getConsultantSuspendedTemplate({
+                consultantName: consultantUser.fullName,
+                reason: reason || "Account under review",
+              }),
+            },
+          },
+          tx,
+        );
+      }
+    }
 
     return {
       status: "ok" as const,
@@ -387,16 +469,84 @@ export async function adminCancelAppointment(
     throw new ValidationError(`INVALID_STATE: Cannot cancel an appointment in terminal state (${appointment.status}).`);
   }
 
-  const updated = await db.appointment.update({
-    where: { id: input.appointmentId },
-    data: {
-      status: "CANCELLED",
-      cancelledAt: new Date(),
-      cancelledById: ctx.actor.id,
-      cancelledBy: "ADMIN",
-      cancellationReason: input.reason,
-    },
-    select: { id: true },
+  const updated = await db.$transaction(async (tx) => {
+    const apt = await tx.appointment.update({
+      where: { id: input.appointmentId },
+      data: {
+        status: "CANCELLED",
+        cancelledAt: new Date(),
+        cancelledById: ctx.actor.id,
+        cancelledBy: "ADMIN",
+        cancellationReason: input.reason,
+      },
+      select: {
+        id: true,
+        clientProfile: {
+          select: {
+            userId: true,
+            displayName: true,
+            user: { select: { email: true } },
+          },
+        },
+        consultantProfile: {
+          select: {
+            userId: true,
+            user: { select: { fullName: true, email: true } },
+          },
+        },
+      },
+    });
+
+    // Notify both client and consultant
+    await sendNotification(
+      {
+        userId: apt.clientProfile.userId,
+        type: "APPOINTMENT_CANCELLED",
+        payload: {
+          title: "Appointment Cancelled by Administration",
+          message: `Your consultation has been cancelled by platform administration: ${input.reason}`,
+          appointmentId: apt.id,
+          link: `/appointments/${apt.id}`,
+        },
+        emailDetails: {
+          toEmail: apt.clientProfile.user.email,
+          template: "APPOINTMENT_CANCELLED",
+          data: getAppointmentCancelledTemplate({
+            recipientName: apt.clientProfile.displayName,
+            cancelledByName: "Platform Administration",
+            reason: input.reason,
+            appointmentId: apt.id,
+          }),
+        },
+      },
+      tx,
+    );
+
+    await sendNotification(
+      {
+        userId: apt.consultantProfile.userId,
+        type: "APPOINTMENT_CANCELLED",
+        payload: {
+          title: "Appointment Cancelled by Administration",
+          message: `A scheduled consultation has been cancelled by platform administration: ${input.reason}`,
+          appointmentId: apt.id,
+          link: `/consultant/appointments/${apt.id}`,
+        },
+        emailDetails: {
+          toEmail: apt.consultantProfile.user.email,
+          template: "APPOINTMENT_CANCELLED",
+          data: getAppointmentCancelledTemplate({
+            recipientName: `Dr. ${apt.consultantProfile.user.fullName}`,
+            cancelledByName: "Platform Administration",
+            reason: input.reason,
+            appointmentId: apt.id,
+          }),
+        },
+      },
+      tx,
+    );
+
+    return apt;
   });
 
   await writeAuditLog(ctx, {

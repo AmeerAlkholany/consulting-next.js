@@ -2,9 +2,8 @@ import "server-only";
 
 import { db } from "@/db/client";
 import type { AppointmentStatus, ConsultationType } from "@/db/generated/prisma/client";
-import type { SessionUser } from "@/server/auth/dal";
 
-export interface AppointmentRow {
+export interface ClientAppointmentRow {
   id: string;
   clientProfileId: string;
   consultantProfileId: string;
@@ -14,14 +13,21 @@ export interface AppointmentRow {
   consultationType: ConsultationType;
   priceMinor: number;
   currency: string;
+  sessionDurationMinutes: number;
+  clientTimezone: string;
+  consultantTimezone: string;
   clientNote: string | null;
+  cancellationReason: string | null;
+  confirmedAt: Date | null;
+  completedAt: Date | null;
+  cancelledAt: Date | null;
+  rescheduledFromId: string | null;
   createdAt: Date;
-}
-
-export interface AppointmentDetailRow extends AppointmentRow {
-  clientDisplayName: string;
   consultantHeadline: string;
   consultantFullName: string;
+  consultantSlug: string;
+  cancellationWindowHours: number;
+  autoConfirmBookings: boolean;
   review?: {
     id: string;
     rating: number;
@@ -31,53 +37,97 @@ export interface AppointmentDetailRow extends AppointmentRow {
   } | null;
 }
 
-/** Fetches appointments for a client profile. */
-export async function getClientAppointments(
+export type AppointmentTab = "upcoming" | "past" | "cancelled";
+
+/**
+ * Fetches appointments partitioned by tab for a client profile.
+ */
+export async function getClientAppointmentsByTab(
   clientProfileId: string,
-  options: { status?: AppointmentStatus[]; limit?: number; offset?: number } = {},
-): Promise<AppointmentDetailRow[]> {
-  const { status, limit = 20, offset = 0 } = options;
+  tab: AppointmentTab,
+  options: { limit?: number; offset?: number; now?: Date } = {},
+): Promise<{ appointments: ClientAppointmentRow[]; total: number }> {
+  const { limit = 20, offset = 0, now = new Date() } = options;
 
-  const results = await db.appointment.findMany({
-    where: {
+  let whereClause: Record<string, unknown> = { clientProfileId };
+
+  if (tab === "upcoming") {
+    whereClause = {
       clientProfileId,
-      ...(status ? { status: { in: status } } : {}),
-    },
-    orderBy: { startsAt: "desc" },
-    take: limit,
-    skip: offset,
-    select: {
-      id: true,
-      clientProfileId: true,
-      consultantProfileId: true,
-      startsAt: true,
-      endsAt: true,
-      status: true,
-      consultationType: true,
-      priceMinor: true,
-      currency: true,
-      clientNote: true,
-      createdAt: true,
-      clientProfile: { select: { displayName: true } },
-      consultantProfile: {
-        select: {
-          headline: true,
-          user: { select: { fullName: true } },
+      status: { in: ["PENDING", "CONFIRMED"] },
+      startsAt: { gte: now },
+    };
+  } else if (tab === "cancelled") {
+    whereClause = {
+      clientProfileId,
+      status: "CANCELLED",
+    };
+  } else {
+    // past: COMPLETED, NO_SHOW, or past startsAt
+    whereClause = {
+      clientProfileId,
+      OR: [
+        { status: { in: ["COMPLETED", "NO_SHOW"] } },
+        {
+          status: { in: ["PENDING", "CONFIRMED"] },
+          startsAt: { lt: now },
         },
-      },
-      review: {
-        select: {
-          id: true,
-          rating: true,
-          comment: true,
-          isPublished: true,
-          createdAt: true,
-        },
-      },
-    },
-  });
+      ],
+    };
+  }
 
-  return results.map((r) => ({
+  const orderBy = tab === "upcoming" ? { startsAt: "asc" as const } : { startsAt: "desc" as const };
+
+  const [results, total] = await Promise.all([
+    db.appointment.findMany({
+      where: whereClause,
+      orderBy,
+      take: limit,
+      skip: offset,
+      select: {
+        id: true,
+        clientProfileId: true,
+        consultantProfileId: true,
+        startsAt: true,
+        endsAt: true,
+        status: true,
+        consultationType: true,
+        priceMinor: true,
+        currency: true,
+        sessionDurationMinutes: true,
+        clientTimezone: true,
+        consultantTimezone: true,
+        clientNote: true,
+        cancellationReason: true,
+        confirmedAt: true,
+        completedAt: true,
+        cancelledAt: true,
+        rescheduledFromId: true,
+        createdAt: true,
+        consultantProfile: {
+          select: {
+            headline: true,
+            slug: true,
+            cancellationWindowHours: true,
+            autoConfirmBookings: true,
+            user: { select: { fullName: true } },
+          },
+        },
+        review: {
+          select: {
+            id: true,
+            rating: true,
+            comment: true,
+            isPublished: true,
+            createdAt: true,
+          },
+        },
+      },
+    }),
+    db.appointment.count({ where: whereClause }),
+  ]);
+
+  const appointments: ClientAppointmentRow[] = results.map((r) => ({
     id: r.id,
     clientProfileId: r.clientProfileId,
     consultantProfileId: r.consultantProfileId,
@@ -87,30 +137,40 @@ export async function getClientAppointments(
     consultationType: r.consultationType,
     priceMinor: r.priceMinor,
     currency: r.currency,
+    sessionDurationMinutes: r.sessionDurationMinutes,
+    clientTimezone: r.clientTimezone,
+    consultantTimezone: r.consultantTimezone,
     clientNote: r.clientNote,
+    cancellationReason: r.cancellationReason,
+    confirmedAt: r.confirmedAt,
+    completedAt: r.completedAt,
+    cancelledAt: r.cancelledAt,
+    rescheduledFromId: r.rescheduledFromId,
     createdAt: r.createdAt,
-    clientDisplayName: r.clientProfile.displayName,
     consultantHeadline: r.consultantProfile.headline,
     consultantFullName: r.consultantProfile.user.fullName,
+    consultantSlug: r.consultantProfile.slug,
+    cancellationWindowHours: r.consultantProfile.cancellationWindowHours,
+    autoConfirmBookings: r.consultantProfile.autoConfirmBookings,
     review: r.review ?? null,
   }));
+
+  return { appointments, total };
 }
 
-/** Fetches appointments for a consultant profile. */
-export async function getConsultantAppointments(
-  consultantProfileId: string,
-  options: { status?: AppointmentStatus[]; limit?: number; offset?: number } = {},
-): Promise<AppointmentDetailRow[]> {
-  const { status, limit = 20, offset = 0 } = options;
-
-  const results = await db.appointment.findMany({
+/**
+ * Fetches a single appointment belonging to the client (IDOR defense).
+ * Returns null if not owned by the client.
+ */
+export async function getClientAppointmentById(
+  clientProfileId: string,
+  appointmentId: string,
+): Promise<ClientAppointmentRow | null> {
+  const r = await db.appointment.findFirst({
     where: {
-      consultantProfileId,
-      ...(status ? { status: { in: status } } : {}),
+      id: appointmentId,
+      clientProfileId,
     },
-    orderBy: { startsAt: "desc" },
-    take: limit,
-    skip: offset,
     select: {
       id: true,
       clientProfileId: true,
@@ -121,72 +181,22 @@ export async function getConsultantAppointments(
       consultationType: true,
       priceMinor: true,
       currency: true,
+      sessionDurationMinutes: true,
+      clientTimezone: true,
+      consultantTimezone: true,
       clientNote: true,
-      createdAt: true,
-      clientProfile: { select: { displayName: true } },
-      consultantProfile: {
-        select: {
-          headline: true,
-          user: { select: { fullName: true } },
-        },
-      },
-      review: {
-        select: {
-          id: true,
-          rating: true,
-          comment: true,
-          isPublished: true,
-          createdAt: true,
-        },
-      },
-    },
-  });
-
-  return results.map((r) => ({
-    id: r.id,
-    clientProfileId: r.clientProfileId,
-    consultantProfileId: r.consultantProfileId,
-    startsAt: r.startsAt,
-    endsAt: r.endsAt,
-    status: r.status,
-    consultationType: r.consultationType,
-    priceMinor: r.priceMinor,
-    currency: r.currency,
-    clientNote: r.clientNote,
-    createdAt: r.createdAt,
-    clientDisplayName: r.clientProfile.displayName,
-    consultantHeadline: r.consultantProfile.headline,
-    consultantFullName: r.consultantProfile.user.fullName,
-    review: r.review ?? null,
-  }));
-}
-
-/** Fetches a single appointment with full details. */
-export async function getAppointmentById(id: string): Promise<AppointmentDetailRow | null> {
-  const result = await db.appointment.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      clientProfileId: true,
-      consultantProfileId: true,
-      startsAt: true,
-      endsAt: true,
-      status: true,
-      consultationType: true,
-      priceMinor: true,
-      currency: true,
-      clientNote: true,
-      createdAt: true,
+      cancellationReason: true,
       confirmedAt: true,
       completedAt: true,
       cancelledAt: true,
-      cancellationReason: true,
-      clientProfile: { select: { displayName: true, userId: true } },
+      rescheduledFromId: true,
+      createdAt: true,
       consultantProfile: {
         select: {
-          id: true,
           headline: true,
           slug: true,
+          cancellationWindowHours: true,
+          autoConfirmBookings: true,
           user: { select: { fullName: true } },
         },
       },
@@ -202,31 +212,47 @@ export async function getAppointmentById(id: string): Promise<AppointmentDetailR
     },
   });
 
-  if (!result) return null;
+  if (!r) return null;
 
   return {
-    id: result.id,
-    clientProfileId: result.clientProfileId,
-    consultantProfileId: result.consultantProfileId,
-    startsAt: result.startsAt,
-    endsAt: result.endsAt,
-    status: result.status,
-    consultationType: result.consultationType,
-    priceMinor: result.priceMinor,
-    currency: result.currency,
-    clientNote: result.clientNote,
-    createdAt: result.createdAt,
-    clientDisplayName: result.clientProfile.displayName,
-    consultantHeadline: result.consultantProfile.headline,
-    consultantFullName: result.consultantProfile.user.fullName,
-    review: result.review ?? null,
+    id: r.id,
+    clientProfileId: r.clientProfileId,
+    consultantProfileId: r.consultantProfileId,
+    startsAt: r.startsAt,
+    endsAt: r.endsAt,
+    status: r.status,
+    consultationType: r.consultationType,
+    priceMinor: r.priceMinor,
+    currency: r.currency,
+    sessionDurationMinutes: r.sessionDurationMinutes,
+    clientTimezone: r.clientTimezone,
+    consultantTimezone: r.consultantTimezone,
+    clientNote: r.clientNote,
+    cancellationReason: r.cancellationReason,
+    confirmedAt: r.confirmedAt,
+    completedAt: r.completedAt,
+    cancelledAt: r.cancelledAt,
+    rescheduledFromId: r.rescheduledFromId,
+    createdAt: r.createdAt,
+    consultantHeadline: r.consultantProfile.headline,
+    consultantFullName: r.consultantProfile.user.fullName,
+    consultantSlug: r.consultantProfile.slug,
+    cancellationWindowHours: r.consultantProfile.cancellationWindowHours,
+    autoConfirmBookings: r.consultantProfile.autoConfirmBookings,
+    review: r.review ?? null,
   };
 }
 
-/** Fetches upcoming appointments for a user (client or consultant). */
-export async function getUpcomingAppointments(
-  _actor: SessionUser,
-): Promise<AppointmentDetailRow[]> {
-  // This is handled in the service layer; this is a convenience DAL helper
-  return [];
+/**
+ * Fetches the very next upcoming appointment for a client dashboard.
+ */
+export async function getNextClientAppointment(
+  clientProfileId: string,
+  now = new Date(),
+): Promise<ClientAppointmentRow | null> {
+  const { appointments } = await getClientAppointmentsByTab(clientProfileId, "upcoming", {
+    limit: 1,
+    now,
+  });
+  return appointments[0] ?? null;
 }

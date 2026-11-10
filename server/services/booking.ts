@@ -616,3 +616,224 @@ export async function getConsultantAppointments(
     review: r.review ?? null,
   }));
 }
+
+export async function confirmAppointment(
+  actor: SessionUser,
+  appointmentId: string,
+): Promise<{ status: "ok"; appointmentId: string } | { status: "error"; message: string }> {
+  const consultantProfile = await getConsultantProfile(actor.id);
+  if (!consultantProfile) {
+    throw new AuthorizationError("Only consultants can confirm appointments.");
+  }
+
+  const appointment = await db.appointment.findFirst({
+    where: {
+      id: appointmentId,
+      consultantProfileId: consultantProfile.id,
+    },
+    select: {
+      id: true,
+      status: true,
+      startsAt: true,
+      endsAt: true,
+      consultantProfileId: true,
+      clientProfileId: true,
+    },
+  });
+
+  if (!appointment) {
+    return { status: "error", message: "Appointment not found." };
+  }
+
+  if (appointment.status !== "PENDING") {
+    return {
+      status: "error",
+      message: `INVALID_STATE: Only PENDING appointments can be confirmed (current status: ${appointment.status}).`,
+    };
+  }
+
+  if (appointment.startsAt.getTime() <= Date.now()) {
+    return {
+      status: "error",
+      message: "TOO_LATE: Cannot confirm an appointment whose start time has already passed.",
+    };
+  }
+
+  try {
+    const updated = await db.appointment.update({
+      where: {
+        id: appointmentId,
+        status: "PENDING", // Compare-and-set
+      },
+      data: {
+        status: "CONFIRMED",
+        confirmedAt: new Date(),
+      },
+      select: { id: true },
+    });
+
+    logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment confirmed");
+    return { status: "ok", appointmentId: updated.id };
+  } catch (err: unknown) {
+    const exclusion = isExclusionViolation(err);
+    if (exclusion.isExclusion) {
+      return {
+        status: "error",
+        message: "SLOT_TAKEN: A conflicting confirmed appointment exists.",
+      };
+    }
+    throw err;
+  }
+}
+
+export async function declineAppointment(
+  actor: SessionUser,
+  input: { appointmentId: string; reason: string },
+): Promise<{ status: "ok"; appointmentId: string } | { status: "error"; message: string }> {
+  const consultantProfile = await getConsultantProfile(actor.id);
+  if (!consultantProfile) {
+    throw new AuthorizationError("Only consultants can decline appointments.");
+  }
+
+  const reason = input.reason.trim();
+  if (!reason) {
+    return { status: "error", message: "A reason is required when declining an appointment." };
+  }
+
+  const appointment = await db.appointment.findFirst({
+    where: {
+      id: input.appointmentId,
+      consultantProfileId: consultantProfile.id,
+    },
+    select: { id: true, status: true },
+  });
+
+  if (!appointment) {
+    return { status: "error", message: "Appointment not found." };
+  }
+
+  if (appointment.status !== "PENDING") {
+    return {
+      status: "error",
+      message: `INVALID_STATE: Only PENDING appointments can be declined (current status: ${appointment.status}).`,
+    };
+  }
+
+  const updated = await db.appointment.update({
+    where: {
+      id: input.appointmentId,
+      status: "PENDING", // Compare-and-set
+    },
+    data: {
+      status: "CANCELLED",
+      cancelledAt: new Date(),
+      cancelledBy: "CONSULTANT",
+      cancellationReason: reason,
+    },
+    select: { id: true },
+  });
+
+  logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment declined");
+  return { status: "ok", appointmentId: updated.id };
+}
+
+export async function completeAppointment(
+  actor: SessionUser,
+  appointmentId: string,
+): Promise<{ status: "ok"; appointmentId: string } | { status: "error"; message: string }> {
+  const consultantProfile = await getConsultantProfile(actor.id);
+  if (!consultantProfile) {
+    throw new AuthorizationError("Only consultants can complete appointments.");
+  }
+
+  const appointment = await db.appointment.findFirst({
+    where: {
+      id: appointmentId,
+      consultantProfileId: consultantProfile.id,
+    },
+    select: { id: true, status: true, endsAt: true },
+  });
+
+  if (!appointment) {
+    return { status: "error", message: "Appointment not found." };
+  }
+
+  if (appointment.status !== "CONFIRMED") {
+    return {
+      status: "error",
+      message: `INVALID_STATE: Only CONFIRMED appointments can be marked completed (current status: ${appointment.status}).`,
+    };
+  }
+
+  if (Date.now() < appointment.endsAt.getTime()) {
+    return {
+      status: "error",
+      message: `TOO_EARLY: Appointment cannot be marked completed until after its end time (${appointment.endsAt.toISOString()}).`,
+    };
+  }
+
+  const updated = await db.appointment.update({
+    where: {
+      id: appointmentId,
+      status: "CONFIRMED", // Compare-and-set
+    },
+    data: {
+      status: "COMPLETED",
+      completedAt: new Date(),
+    },
+    select: { id: true },
+  });
+
+  logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment marked completed");
+  return { status: "ok", appointmentId: updated.id };
+}
+
+export async function markNoShowAppointment(
+  actor: SessionUser,
+  appointmentId: string,
+): Promise<{ status: "ok"; appointmentId: string } | { status: "error"; message: string }> {
+  const consultantProfile = await getConsultantProfile(actor.id);
+  if (!consultantProfile) {
+    throw new AuthorizationError("Only consultants can mark appointments as no-show.");
+  }
+
+  const appointment = await db.appointment.findFirst({
+    where: {
+      id: appointmentId,
+      consultantProfileId: consultantProfile.id,
+    },
+    select: { id: true, status: true, endsAt: true },
+  });
+
+  if (!appointment) {
+    return { status: "error", message: "Appointment not found." };
+  }
+
+  if (appointment.status !== "CONFIRMED") {
+    return {
+      status: "error",
+      message: `INVALID_STATE: Only CONFIRMED appointments can be marked as no-show (current status: ${appointment.status}).`,
+    };
+  }
+
+  if (Date.now() < appointment.endsAt.getTime()) {
+    return {
+      status: "error",
+      message: `TOO_EARLY: Appointment cannot be marked as no-show until after its end time (${appointment.endsAt.toISOString()}).`,
+    };
+  }
+
+  const updated = await db.appointment.update({
+    where: {
+      id: appointmentId,
+      status: "CONFIRMED", // Compare-and-set
+    },
+    data: {
+      status: "NO_SHOW",
+    },
+    select: { id: true },
+  });
+
+  logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment marked no-show");
+  return { status: "ok", appointmentId: updated.id };
+}

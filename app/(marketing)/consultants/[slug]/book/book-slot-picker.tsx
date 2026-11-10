@@ -26,6 +26,7 @@ interface AvailabilityData {
 
 interface BookSlotPickerProps {
   slug: string;
+  consultantProfileId: string;
   consultantName: string;
   defaultFrom: string;
   defaultTo: string;
@@ -34,6 +35,7 @@ interface BookSlotPickerProps {
 
 export default function BookSlotPicker({
   slug,
+  consultantProfileId,
   consultantName,
   defaultFrom,
   defaultTo,
@@ -95,8 +97,7 @@ export default function BookSlotPicker({
     const idempotencyKey = `${slug}-${selectedSlot.startsAt}-${Date.now()}`;
 
     const formData = new FormData();
-    // Use empty string for consultantProfileId - server will resolve from slug
-    formData.set("consultantProfileId", "");
+    formData.set("consultantProfileId", consultantProfileId);
     formData.set("startsAt", selectedSlot.startsAt);
     formData.set("endsAt", selectedSlot.endsAt);
     formData.set("consultationType", consultationType);

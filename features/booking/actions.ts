@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { requireClient } from "@/server/authz/guards";
+import { revalidatePath, updateTag } from "next/cache";
+import { requireClient, requireUser } from "@/server/authz/guards";
 import { createBooking, cancelAppointment, rescheduleAppointment } from "@/server/services/booking";
 import {
   bookingSchema,
@@ -40,6 +40,7 @@ export async function bookAppointmentAction(
     return formError("Consultant not found or no longer accepting bookings.");
   }
 
+  updateTag(`availability:${parsed.data.consultantProfileId}`);
   revalidatePath("/appointments");
   revalidatePath("/consultants/[slug]", "layout");
   return formSuccess(
@@ -53,7 +54,7 @@ export async function cancelAppointmentAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const actor = await requireClient();
+  const actor = await requireUser();
 
   const parsed = parseForm(cancelAppointmentSchema, {
     appointmentId: formData.get("appointmentId") as string,

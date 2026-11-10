@@ -2,7 +2,7 @@ import "server-only";
 
 import { db } from "@/db/client";
 import { logger } from "@/server/logger";
-import { AuthorizationError } from "@/server/errors";
+import { AuthorizationError, isExclusionViolation } from "@/server/errors";
 import type { SessionUser } from "@/server/auth/dal";
 import { getClientProfile } from "@/server/dal/client-profile";
 import { getConsultantProfile } from "@/server/dal/consultant-profile";
@@ -146,49 +146,60 @@ export async function createBooking(
     };
   }
 
-  // Create the appointment in a transaction
-  const result = await db.$transaction(async (tx) => {
-    const appointment = await tx.appointment.create({
-      data: {
-        clientProfileId: clientProfile.id,
-        consultantProfileId: consultantProfile.id,
-        startsAt,
-        endsAt,
-        clientTimezone: actor.timezone,
-        consultantTimezone: consultantProfile.timezone,
-        status: "PENDING",
-        consultationType: input.consultationType,
-        priceMinor: consultantProfile.sessionPriceMinor,
-        currency: consultantProfile.currency,
-        sessionDurationMinutes: consultantProfile.sessionDurationMinutes,
-        clientNote: input.clientNote,
-        requestIdempotencyKey: input.idempotencyKey,
-      },
-      select: { id: true, status: true },
+  // Create the appointment in a transaction with exclusion violation handling
+  try {
+    const result = await db.$transaction(async (tx) => {
+      const appointment = await tx.appointment.create({
+        data: {
+          clientProfileId: clientProfile.id,
+          consultantProfileId: consultantProfile.id,
+          startsAt,
+          endsAt,
+          clientTimezone: actor.timezone,
+          consultantTimezone: consultantProfile.timezone,
+          status: consultantProfile.autoConfirmBookings ? "CONFIRMED" : "PENDING",
+          confirmedAt: consultantProfile.autoConfirmBookings ? new Date() : null,
+          consultationType: input.consultationType,
+          priceMinor: consultantProfile.sessionPriceMinor,
+          currency: consultantProfile.currency,
+          sessionDurationMinutes: consultantProfile.sessionDurationMinutes,
+          clientNote: input.clientNote,
+          requestIdempotencyKey: input.idempotencyKey,
+        },
+        select: { id: true, status: true },
+      });
+
+      return appointment;
     });
 
-    return appointment;
-  });
+    const autoConfirmed = consultantProfile.autoConfirmBookings;
 
-  const autoConfirmed = consultantProfile.autoConfirmBookings;
+    logger.info(
+      { appointmentId: result.id, consultantId: consultantProfile.id, clientId: actor.id },
+      "booking created",
+    );
 
-  if (autoConfirmed && result.status === "PENDING") {
-    await db.appointment.update({
-      where: { id: result.id },
-      data: { status: "CONFIRMED", confirmedAt: new Date() },
-    });
+    return {
+      status: "ok",
+      appointmentId: result.id,
+      autoConfirmed,
+    };
+  } catch (err: unknown) {
+    const exclusion = isExclusionViolation(err);
+    if (exclusion.isExclusion) {
+      if (exclusion.constraint === "appointment_client_no_overlap") {
+        return {
+          status: "conflict",
+          message: "CLIENT_DOUBLE_BOOKED: You already have another appointment during this time.",
+        };
+      }
+      return {
+        status: "conflict",
+        message: "SLOT_TAKEN: This slot was just booked by someone else. Please choose another slot.",
+      };
+    }
+    throw err;
   }
-
-  logger.info(
-    { appointmentId: result.id, consultantId: consultantProfile.id, clientId: actor.id },
-    "booking created",
-  );
-
-  return {
-    status: "ok",
-    appointmentId: result.id,
-    autoConfirmed,
-  };
 }
 
 export async function cancelAppointment(
@@ -217,8 +228,9 @@ export async function cancelAppointment(
 
   const isClient = clientProfile?.id === appointment.clientProfileId;
   const isConsultant = consultantProfile?.id === appointment.consultantProfileId;
+  const isAdmin = actor.role === "ADMIN";
 
-  if (!isClient && !isConsultant) {
+  if (!isClient && !isConsultant && !isAdmin) {
     throw new AuthorizationError("You don't have access to this appointment.");
   }
 
@@ -342,43 +354,52 @@ export async function rescheduleAppointment(
     return { status: "error", message: "Selected slot is no longer available." };
   }
 
-  const result = await db.$transaction(async (tx) => {
-    // Cancel the old appointment
-    await tx.appointment.update({
-      where: { id: appointment.id },
-      data: {
-        status: "CANCELLED",
-        cancelledAt: new Date(),
-        cancelledBy: "CLIENT",
-        rescheduledFromId: appointment.id,
-      },
+  try {
+    const result = await db.$transaction(async (tx) => {
+      // Cancel the old appointment
+      await tx.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          status: "CANCELLED",
+          cancelledAt: new Date(),
+          cancelledBy: "CLIENT",
+          cancellationReason: "Rescheduled to new time slot",
+        },
+      });
+
+      // Create the new appointment linked to the original
+      const newAppointment = await tx.appointment.create({
+        data: {
+          clientProfileId: appointment.clientProfileId,
+          consultantProfileId: appointment.consultantProfileId,
+          startsAt: newStartsAt,
+          endsAt: newEndsAt,
+          clientTimezone: actor.timezone,
+          consultantTimezone: consultantProfile.timezone,
+          status: "PENDING",
+          consultationType: appointment.consultationType,
+          priceMinor: appointment.priceMinor,
+          currency: appointment.currency,
+          sessionDurationMinutes: consultantProfile.sessionDurationMinutes,
+          clientNote: input.clientNote ?? appointment.clientNote,
+          rescheduledFromId: appointment.id,
+        },
+        select: { id: true },
+      });
+
+      return newAppointment;
     });
 
-    // Create the new appointment
-    const newAppointment = await tx.appointment.create({
-      data: {
-        clientProfileId: appointment.clientProfileId,
-        consultantProfileId: appointment.consultantProfileId,
-        startsAt: newStartsAt,
-        endsAt: newEndsAt,
-        clientTimezone: actor.timezone,
-        consultantTimezone: consultantProfile.timezone,
-        status: "PENDING",
-        consultationType: appointment.consultationType,
-        priceMinor: appointment.priceMinor,
-        currency: appointment.currency,
-        sessionDurationMinutes: consultantProfile.sessionDurationMinutes,
-        clientNote: input.clientNote ?? appointment.clientNote,
-      },
-      select: { id: true },
-    });
+    logger.info({ oldId: appointment.id, newId: result.id }, "appointment rescheduled");
 
-    return newAppointment;
-  });
-
-  logger.info({ oldId: appointment.id, newId: result.id }, "appointment rescheduled");
-
-  return { status: "ok", newAppointmentId: result.id };
+    return { status: "ok", newAppointmentId: result.id };
+  } catch (err: unknown) {
+    const exclusion = isExclusionViolation(err);
+    if (exclusion.isExclusion) {
+      return { status: "error", message: "SLOT_TAKEN: Selected slot is already booked." };
+    }
+    throw err;
+  }
 }
 
 export interface AppointmentCountResult {

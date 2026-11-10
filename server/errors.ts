@@ -115,6 +115,42 @@ export class RateLimitError extends AppError {
   }
 }
 
+export class SlotTakenError extends ConflictError {
+  constructor(safeMessage = "This time slot is no longer available. Please select another slot.") {
+    super(safeMessage);
+    this.name = "SlotTakenError";
+  }
+}
+
+export class ClientDoubleBookedError extends ConflictError {
+  constructor(safeMessage = "You already have another appointment scheduled during this time.") {
+    super(safeMessage);
+    this.name = "ClientDoubleBookedError";
+  }
+}
+
+/**
+ * Checks whether an error is a PostgreSQL 23P01 exclusion constraint violation
+ * for appointment overlapping.
+ */
+export function isExclusionViolation(error: unknown): {
+  isExclusion: boolean;
+  constraint?: "appointment_consultant_no_overlap" | "appointment_client_no_overlap";
+} {
+  if (!error) return { isExclusion: false };
+  const str =
+    (error instanceof Error ? error.message : "") +
+    (typeof error === "object" && error !== null ? JSON.stringify(error) : String(error));
+
+  if (str.includes("23P01") || str.includes("exclusion constraint")) {
+    if (str.includes("appointment_client_no_overlap")) {
+      return { isExclusion: true, constraint: "appointment_client_no_overlap" };
+    }
+    return { isExclusion: true, constraint: "appointment_consultant_no_overlap" };
+  }
+  return { isExclusion: false };
+}
+
 /**
  * Maps an error (AppError or unknown) to its corresponding HTTP status code.
  */

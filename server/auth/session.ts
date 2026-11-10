@@ -271,4 +271,3 @@ export async function readSessionToken(): Promise<string | null> {
   const cookieStore = await cookies();
   return cookieStore.get(sessionCookieName)?.value ?? null;
 }
-

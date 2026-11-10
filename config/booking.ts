@@ -27,4 +27,10 @@ export const BOOKING_POLICY = {
 
   // Slot step resolution in minutes
   slotStepMinutes: 5,
+
+  // Default buffer minutes between appointments
+  bufferMinutes: 10,
+
+  // Minimum lead time (hours)
+  minLeadTimeHours: 12,
 } as const;

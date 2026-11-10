@@ -35,6 +35,22 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // A leading underscore marks an intentionally unused binding — required
+    // Server Action signature parameters, stub parameters, and similar.
+    files: ["**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+  {
     // Exemption for config/env.ts, config/load-env.ts, and prisma.config.ts which are CLI/env entry points.
     files: ["config/env.ts", "config/load-env.ts", "prisma.config.ts"],
     rules: {

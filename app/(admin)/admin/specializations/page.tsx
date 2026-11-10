@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, GripVertical } from "lucide-react";
 
 export default async function AdminSpecializationsPage() {
-  const admin = await requireAdmin();
+  await requireAdmin();
   const specializations = await getSpecializations();
 
   return (
@@ -26,23 +26,39 @@ export default async function AdminSpecializationsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="w-10 text-center p-3 text-sm font-medium text-muted-foreground">Order</th>
+                  <th className="w-10 text-center p-3 text-sm font-medium text-muted-foreground">
+                    Order
+                  </th>
                   <th className="p-3 text-left text-sm font-medium text-muted-foreground">Name</th>
                   <th className="p-3 text-left text-sm font-medium text-muted-foreground">Slug</th>
-                  <th className="p-3 text-left text-sm font-medium text-muted-foreground">Description</th>
-                  <th className="w-32 text-center p-3 text-sm font-medium text-muted-foreground">Consultants</th>
-                  <th className="w-28 text-center p-3 text-sm font-medium text-muted-foreground">Status</th>
-                  <th className="w-48 text-right p-3 text-sm font-medium text-muted-foreground">Actions</th>
+                  <th className="p-3 text-left text-sm font-medium text-muted-foreground">
+                    Description
+                  </th>
+                  <th className="w-32 text-center p-3 text-sm font-medium text-muted-foreground">
+                    Consultants
+                  </th>
+                  <th className="w-28 text-center p-3 text-sm font-medium text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="w-48 text-right p-3 text-sm font-medium text-muted-foreground">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {specializations.map((spec) => (
                   <tr key={spec.id} className="border-b border-border">
-                    <td className="text-center p-3 text-sm font-mono text-muted-foreground">{spec.sortOrder}</td>
+                    <td className="text-center p-3 text-sm font-mono text-muted-foreground">
+                      {spec.sortOrder}
+                    </td>
                     <td className="p-3 font-medium">{spec.name}</td>
                     <td className="p-3 font-mono text-sm text-muted-foreground">{spec.slug}</td>
-                    <td className="max-w-xs p-3 text-sm text-muted-foreground">{spec.description ?? "—"}</td>
-                    <td className="text-center p-3 text-sm text-muted-foreground">{spec.consultantCount}</td>
+                    <td className="max-w-xs p-3 text-sm text-muted-foreground">
+                      {spec.description ?? "—"}
+                    </td>
+                    <td className="text-center p-3 text-sm text-muted-foreground">
+                      {spec.consultantCount}
+                    </td>
                     <td className="text-center p-3">
                       <Badge variant={spec.isActive ? "default" : "secondary"}>
                         {spec.isActive ? "Active" : "Disabled"}
@@ -54,11 +70,21 @@ export default async function AdminSpecializationsPage() {
                           <Edit className="h-4 w-4" />
                         </Button>
                         {spec.isActive ? (
-                          <Button variant="ghost" size="icon" aria-label="Disable" className="text-destructive hover:text-destructive">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Disable"
+                            className="text-destructive hover:text-destructive"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         ) : (
-                          <Button variant="ghost" size="icon" aria-label="Enable" className="text-success hover:text-success">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Enable"
+                            className="text-success hover:text-success"
+                          >
                             <Plus className="h-4 w-4" />
                           </Button>
                         )}

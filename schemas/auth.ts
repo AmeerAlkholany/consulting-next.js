@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { passwordPolicy } from "@/config/security";
-import { isCommonPassword, isPasswordAcceptable, countPasswordCharacterClasses } from "@/lib/password-strength";
+import {
+  isCommonPassword,
+  isPasswordAcceptable,
+  countPasswordCharacterClasses,
+} from "@/lib/password-strength";
 import { emailSchema, ianaTimezoneSchema } from "./common";
 
 /**
@@ -29,7 +33,10 @@ export const passwordFieldSchema = z
       passwordPolicy.classes.map((entry) => entry.label).join(", ") +
       ".",
   )
-  .refine((value) => !isCommonPassword(value), "Choose a password that is not a commonly used one.");
+  .refine(
+    (value) => !isCommonPassword(value),
+    "Choose a password that is not a commonly used one.",
+  );
 
 /**
  * Registration role. Deliberately a two-value literal union and not

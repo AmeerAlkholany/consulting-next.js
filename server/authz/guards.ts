@@ -6,6 +6,7 @@ import { logger } from "@/server/logger";
 import { assertCapability } from "@/server/authz/policy";
 import { getCurrentUser, type SessionUser } from "@/server/auth/dal";
 import { safeRedirectPath } from "@/lib/redirects";
+import { getConsultantProfile } from "@/server/dal/consultant-profile";
 
 /**
  * Authorization guards (ARCHITECTURE.md §10).
@@ -45,10 +46,7 @@ export async function requireUser(
   }
 
   if (user.status !== "ACTIVE") {
-    logger.warn(
-      { userId: user.id, status: user.status },
-      "active user check failed",
-    );
+    logger.warn({ userId: user.id, status: user.status }, "active user check failed");
     // Suspended/deactivated users are signed out rather than shown a 403 —
     // the explanation belongs to the caller, not here.
     throw new AuthenticationError(
@@ -75,10 +73,7 @@ export async function requireRole(
   });
 
   if (user.role !== requiredRole) {
-    logger.warn(
-      { userId: user.id, role: user.role, requiredRole },
-      "role mismatch",
-    );
+    logger.warn({ userId: user.id, role: user.role, requiredRole }, "role mismatch");
     throw new AuthorizationError("You do not have permission to access this page.");
   }
 
@@ -100,9 +95,7 @@ function mapRoleToCapability(role: SessionUser["role"]): string {
  * Resolves the session and asserts the user is a CLIENT. Returns the user when
  * authorized; throws `AuthorizationError` otherwise.
  */
-export async function requireClient(
-  options: { redirectPath?: string } = {},
-): Promise<SessionUser> {
+export async function requireClient(options: { redirectPath?: string } = {}): Promise<SessionUser> {
   return requireRole("CLIENT", options);
 }
 
@@ -120,11 +113,16 @@ export async function requireConsultant(
   const user = await requireRole("CONSULTANT", options);
 
   if (options.approved === true) {
-    // The approved check must happen in the service that fetches the profile,
-    // because the DAL projection in `getCurrentUser()` does not include
-    // `consultantProfile.verificationStatus`. This guard exists only to assert
-    // the role is CONSULTANT; the approval gate is enforced where the profile
-    // row is read (ARCHITECTURE.md §10 enforcement layer 1).
+    const profile = await getConsultantProfile(user.id);
+
+    if (!profile || profile.verificationStatus !== "APPROVED") {
+      logger.warn(
+        { userId: user.id },
+        "consultant approved check failed: profile missing or not APPROVED",
+      );
+      throw new AuthorizationError("Your consultant profile is not approved.");
+    }
+
     assertCapability(user, "manageAvailability", {
       userLabel: user.id,
       route: options.redirectPath,
@@ -138,9 +136,7 @@ export async function requireConsultant(
  * Resolves the session and asserts the user is an ADMIN. Returns the user when
  * authorized; throws `AuthorizationError` otherwise.
  */
-export async function requireAdmin(
-  options: { redirectPath?: string } = {},
-): Promise<SessionUser> {
+export async function requireAdmin(options: { redirectPath?: string } = {}): Promise<SessionUser> {
   return requireRole("ADMIN", options);
 }
 
@@ -187,15 +183,9 @@ export function assertOwnsAppointment(
  * Asserts that `profile` belongs to `actor`. Throws `AuthorizationError`
  * when the ids do not match.
  */
-export function assertOwnsProfile(
-  actor: SessionUser,
-  profile: { userId: string },
-): void {
+export function assertOwnsProfile(actor: SessionUser, profile: { userId: string }): void {
   if (profile.userId !== actor.id) {
-    logger.warn(
-      { userId: actor.id, profileId: profile.userId },
-      "profile ownership check failed",
-    );
+    logger.warn({ userId: actor.id, profileId: profile.userId }, "profile ownership check failed");
     throw new AuthorizationError("You don't have access to this.");
   }
 }

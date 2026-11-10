@@ -1,10 +1,13 @@
 import "server-only";
 
 import { db } from "@/db/client";
-import { logger } from "@/server/logger";
 import { writeAuditLog, type AuditContext, type AuditAction } from "./audit";
 import { generateSlug } from "@/schemas/taxonomy";
-import type { SpecializationInput, UpdateSpecializationInput, ReorderSpecializationsInput } from "@/schemas/taxonomy";
+import type {
+  SpecializationInput,
+  UpdateSpecializationInput,
+  ReorderSpecializationsInput,
+} from "@/schemas/taxonomy";
 
 /**
  * Specialization management service (IMPLEMENTATION.md Step 7).
@@ -46,7 +49,11 @@ export async function createSpecialization(
     });
 
     if (existingBySlug) {
-      return { status: "conflict", field: "slug" as const, message: "A specialization with this name already exists (slug collision)." } as ConflictResult;
+      return {
+        status: "conflict",
+        field: "slug" as const,
+        message: "A specialization with this name already exists (slug collision).",
+      } as ConflictResult;
     }
 
     const existingByName = await tx.specialization.findFirst({
@@ -55,7 +62,11 @@ export async function createSpecialization(
     });
 
     if (existingByName) {
-      return { status: "conflict", field: "name" as const, message: "A specialization with this name already exists." } as ConflictResult;
+      return {
+        status: "conflict",
+        field: "name" as const,
+        message: "A specialization with this name already exists.",
+      } as ConflictResult;
     }
 
     // Find max sortOrder to append at the end.
@@ -111,7 +122,11 @@ export async function updateSpecialization(
       });
 
       if (nameConflict) {
-        return { status: "conflict", field: "name" as const, message: "A specialization with this name already exists." } as ConflictResult;
+        return {
+          status: "conflict",
+          field: "name" as const,
+          message: "A specialization with this name already exists.",
+        } as ConflictResult;
       }
     }
 
@@ -203,10 +218,7 @@ export async function disableSpecialization(
 }
 
 /** Re-enables a specialization. */
-export async function enableSpecialization(
-  ctx: AuditContext,
-  id: string,
-): Promise<MutationResult> {
+export async function enableSpecialization(ctx: AuditContext, id: string): Promise<MutationResult> {
   const spec = await db.specialization.findUnique({
     where: { id },
     select: { id: true, slug: true, name: true, isActive: true },

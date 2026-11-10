@@ -151,7 +151,9 @@ describe("email verification", () => {
     const user = await prisma.user.findUniqueOrThrow({ where: { email: currentEmail } });
     expect(user.emailVerifiedAt).not.toBeNull();
 
-    const consumed = await prisma.verificationToken.findFirstOrThrow({ where: { userId: user.id } });
+    const consumed = await prisma.verificationToken.findFirstOrThrow({
+      where: { userId: user.id },
+    });
     expect(consumed.consumedAt).not.toBeNull();
     expect(consumed.tokenHash).toBe(hashOpaqueToken(token));
 
@@ -231,7 +233,6 @@ describe("email verification", () => {
   });
 });
 
-
 describe("password reset", () => {
   it("queues a reset link and answers identically for a known and an unknown address", async () => {
     await captureRedirect(() => registerAction(initialAuthFormState, registerFormData()));
@@ -280,7 +281,9 @@ describe("password reset", () => {
     expect(consumed.tokenHash).toBe(hashOpaqueToken(token));
 
     // The "your password changed" notification is queued as well.
-    expect(await prisma.emailOutbox.count({ where: { template: "auth.password-changed" } })).toBe(1);
+    expect(await prisma.emailOutbox.count({ where: { template: "auth.password-changed" } })).toBe(
+      1,
+    );
   });
 
   it("accepts the new password and refuses the old one", async () => {
@@ -298,15 +301,11 @@ describe("password reset", () => {
     expect(withNew).toBe("/");
 
     resetRequestState("198.51.100.122");
-    const withOld = await loginAction(
-      initialAuthFormState,
-      loginFormData(currentEmail, PASSWORD),
-    );
+    const withOld = await loginAction(initialAuthFormState, loginFormData(currentEmail, PASSWORD));
     expect(withOld.status).toBe("error");
     expect(withOld.message).toBe("That email address and password do not match an account.");
   });
 });
-
 
 describe("password reset edge cases", () => {
   it("refuses a consumed reset token", async () => {
@@ -339,7 +338,10 @@ describe("password reset edge cases", () => {
 
     expect(second).not.toBe(first);
 
-    const stale = await resetPasswordAction(initialAuthFormState, resetFormData(first, NEW_PASSWORD));
+    const stale = await resetPasswordAction(
+      initialAuthFormState,
+      resetFormData(first, NEW_PASSWORD),
+    );
     expect(stale.status).toBe("error");
 
     const fresh = await resetPasswordAction(
@@ -407,4 +409,3 @@ describe("password reset edge cases", () => {
     expect(states[3].message).toContain("Too many attempts");
   });
 });
-

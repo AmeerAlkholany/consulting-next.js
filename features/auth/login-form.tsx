@@ -41,14 +41,20 @@ function LoginForm({ nextPath }: LoginFormProps) {
     return state.fieldErrors[field]?.[0] ?? errors[field]?.message;
   }
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!(await trigger())) {
+    // Save the form element before awaiting trigger().
+    // After an await, event.currentTarget may no longer be the HTMLFormElement.
+    const form = event.currentTarget as HTMLFormElement;
+
+    const isValid = await trigger();
+
+    if (!isValid) {
       return;
     }
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
 
     if (nextPath) {
       formData.set("next", nextPath);
@@ -93,7 +99,10 @@ function LoginForm({ nextPath }: LoginFormProps) {
       </Button>
 
       <p className="text-sm text-muted-foreground">
-        <Link href="/forgot-password" className="font-medium text-primary underline-offset-4 hover:underline">
+        <Link
+          href="/forgot-password"
+          className="font-medium text-primary underline-offset-4 hover:underline"
+        >
           Forgot your password?
         </Link>
       </p>

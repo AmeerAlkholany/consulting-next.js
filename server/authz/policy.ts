@@ -29,10 +29,7 @@ import type { SessionUser } from "@/server/auth/session";
  * defect in the matrix rather than silently granted — every capability must
  * appear in `config/roles.ts` or this function refuses it outright.
  */
-export function evaluateCapability(
-  user: SessionUser | null,
-  capabilityId: string,
-): boolean {
+export function evaluateCapability(user: SessionUser | null, capabilityId: string): boolean {
   if (user === null) {
     return false;
   }
@@ -100,9 +97,7 @@ export function assertCapability(
  * repeating the table from ARCHITECTURE.md §10 by hand.
  */
 export function getCapabilitiesForRole(role: ActorRole): readonly string[] {
-  return capabilities
-    .filter((c) => c.roles.includes(role))
-    .map((c) => c.id);
+  return capabilities.filter((c) => c.roles.includes(role)).map((c) => c.id);
 }
 
 /**
@@ -111,9 +106,7 @@ export function getCapabilitiesForRole(role: ActorRole): readonly string[] {
  * without a corresponding test is caught immediately.
  */
 export function assertMatrixCoverage(exercisedIds: ReadonlySet<string>): void {
-  const uncovered = capabilities
-    .filter((c) => !exercisedIds.has(c.id))
-    .map((c) => c.id);
+  const uncovered = capabilities.filter((c) => !exercisedIds.has(c.id)).map((c) => c.id);
 
   if (uncovered.length > 0) {
     throw new Error(

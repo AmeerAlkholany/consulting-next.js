@@ -158,7 +158,9 @@ describe("loginSchema", () => {
   it("does not apply the strength rule to an existing password", () => {
     // Legacy passwords may predate the current policy; only registration and
     // reset are gated on strength.
-    expect(loginSchema.safeParse({ email: "dana@example.com", password: "old" }).success).toBe(true);
+    expect(loginSchema.safeParse({ email: "dana@example.com", password: "old" }).success).toBe(
+      true,
+    );
   });
 
   it("rejects an empty password", () => {

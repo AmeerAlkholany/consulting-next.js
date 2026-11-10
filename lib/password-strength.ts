@@ -32,9 +32,8 @@ export function isCommonPassword(password: string): boolean {
 
 /** How many of the four character classes the password contains. */
 export function countPasswordCharacterClasses(password: string): number {
-  return passwordPolicy.classes.filter((characterClass) =>
-    characterClass.pattern.test(password),
-  ).length;
+  return passwordPolicy.classes.filter((characterClass) => characterClass.pattern.test(password))
+    .length;
 }
 
 /** The rules `registerSchema` and `resetPasswordSchema` enforce, in one place. */
@@ -114,7 +113,8 @@ function scorePassword(
     return 0;
   }
 
-  const lengthPoints = password.length >= 16 ? 3 : password.length >= passwordPolicy.minLength ? 2 : 1;
+  const lengthPoints =
+    password.length >= 16 ? 3 : password.length >= passwordPolicy.minLength ? 2 : 1;
   const varietyPoints = classCount >= 4 ? 1 : 0;
   const bonus = hasEnoughClasses && password.length >= 16 ? 1 : 0;
 

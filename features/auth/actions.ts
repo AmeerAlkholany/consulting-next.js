@@ -4,11 +4,14 @@ import type { Route } from "next";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { GENERIC_INBOX_MESSAGE } from "@/features/auth/form-state";
+import { SIGNED_IN_LANDING_PATH, safeRedirectPath } from "@/lib/redirects";
 import {
-  SIGNED_IN_LANDING_PATH,
-  safeRedirectPath,
-} from "@/lib/redirects";
-import { loginSchema, registerSchema, requestResetSchema, resetPasswordSchema, tokenParamSchema } from "@/schemas/auth";
+  loginSchema,
+  registerSchema,
+  requestResetSchema,
+  resetPasswordSchema,
+  tokenParamSchema,
+} from "@/schemas/auth";
 import { getSession } from "@/server/auth/dal";
 import { readAuthRequestContext } from "@/server/auth/request-context";
 import { clearSessionCookie, writeSessionCookie } from "@/server/auth/session";
@@ -241,9 +244,7 @@ export async function verifyEmailAction(
 }
 
 export async function resendVerificationAction(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _prevState: AuthFormState,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _formData: FormData,
 ): Promise<AuthFormState> {
   const session = await getSession();
@@ -272,4 +273,3 @@ export async function resendVerificationAction(
 
   return formSuccess("We have sent a new verification link. Check your inbox.");
 }
-

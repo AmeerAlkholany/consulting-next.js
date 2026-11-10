@@ -28,27 +28,26 @@ export const specializationSchema = z
     sortOrder: z.coerce.number().int().min(0, "Sort order must be non-negative.").default(0),
     isActive: z.boolean().default(true),
   })
-  .refine(
-    (data) => data.name.trim().length >= 2,
-    { message: "Name must be at least 2 characters.", path: ["name"] },
-  );
-
-export const updateSpecializationSchema = z
-  .object({
-    name: z
-      .string()
-      .trim()
-      .min(2, "Name must be at least 2 characters.")
-      .max(60, "Name must be 60 characters or fewer."),
-    description: z
-      .string()
-      .trim()
-      .max(300, "Description must be 300 characters or fewer.")
-      .optional()
-      .nullable(),
-    sortOrder: z.coerce.number().int().min(0, "Sort order must be non-negative.").default(0),
-    isActive: z.boolean().default(true),
+  .refine((data) => data.name.trim().length >= 2, {
+    message: "Name must be at least 2 characters.",
+    path: ["name"],
   });
+
+export const updateSpecializationSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters.")
+    .max(60, "Name must be 60 characters or fewer."),
+  description: z
+    .string()
+    .trim()
+    .max(300, "Description must be 300 characters or fewer.")
+    .optional()
+    .nullable(),
+  sortOrder: z.coerce.number().int().min(0, "Sort order must be non-negative.").default(0),
+  isActive: z.boolean().default(true),
+});
 
 export const reorderSpecializationsSchema = z.array(
   z.object({

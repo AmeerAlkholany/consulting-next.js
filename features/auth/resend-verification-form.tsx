@@ -29,7 +29,9 @@ function ResendVerificationForm() {
         {pending ? "Sending…" : "Resend verification link"}
       </Button>
       {state.message ? (
-        <FormMessage tone={state.status === "error" ? "error" : "success"}>{state.message}</FormMessage>
+        <FormMessage tone={state.status === "error" ? "error" : "success"}>
+          {state.message}
+        </FormMessage>
       ) : null}
     </form>
   );

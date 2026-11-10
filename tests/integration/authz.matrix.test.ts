@@ -10,7 +10,8 @@ import { getCapabilitiesForRole, assertMatrixCoverage } from "@/server/authz/pol
  * throw, so adding a capability without a test decision fails immediately.
  */
 
-const roles: (keyof typeof capabilities)[] = ["CLIENT", "CONSULTANT", "ADMIN"] as unknown as (keyof typeof capabilities)[];
+const roles = ["CLIENT", "CONSULTANT", "ADMIN"] as const;
+void roles;
 
 describe("authorization matrix", () => {
   it("covers every capability declared in config/roles.ts", () => {
@@ -37,7 +38,9 @@ describe("authorization matrix", () => {
 
     for (const role of ["CLIENT" as const, "CONSULTANT" as const, "ADMIN" as const]) {
       const roleCapabilities = new Set(
-        capabilities.filter((c) => c.roles.includes(role.toLowerCase() as ActorRole)).map((c) => c.id),
+        capabilities
+          .filter((c) => c.roles.includes(role.toLowerCase() as ActorRole))
+          .map((c) => c.id),
       );
 
       // VISITOR-only capabilities should not appear in any role

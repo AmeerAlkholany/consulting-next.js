@@ -130,7 +130,9 @@ export async function getQualifications(consultantProfileId: string): Promise<Qu
 }
 
 /** Fetches a consultant profile by slug (public view). */
-export async function getConsultantProfileBySlug(slug: string): Promise<ConsultantProfileData | null> {
+export async function getConsultantProfileBySlug(
+  slug: string,
+): Promise<ConsultantProfileData | null> {
   const profile = await db.consultantProfile.findUnique({
     where: { slug },
     select: {

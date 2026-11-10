@@ -31,18 +31,16 @@ export const clientProfileSchema = z
       .nullable()
       .transform((v) => (v === "" ? null : v))
       .refine(
-        (v) => v === undefined || v === null || (typeof v === "string" && !isNaN(new Date(v).getTime())),
+        (v) =>
+          v === undefined || v === null || (typeof v === "string" && !isNaN(new Date(v).getTime())),
         "Date of birth must be a valid date.",
       )
-      .refine(
-        (v) => {
-          if (v === undefined || v === null || typeof v !== "string") return true;
-          const dob = new Date(v);
-          const age = (Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-          return age >= 16;
-        },
-        "You must be at least 16 years old.",
-      ),
+      .refine((v) => {
+        if (v === undefined || v === null || typeof v !== "string") return true;
+        const dob = new Date(v);
+        const age = (Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+        return age >= 16;
+      }, "You must be at least 16 years old."),
     timezone: z.string().trim().min(1, "Timezone is required."),
     languageIds: z.array(z.string()).default([]),
     emergencyContactName: z.string().optional().nullable().default(null),
@@ -59,12 +57,16 @@ export const clientProfileSchema = z
   .refine(
     (data) => {
       // Emergency contact phone requires a name. Treat undefined as "not provided".
-      const hasPhone = data.emergencyContactPhone !== undefined && data.emergencyContactPhone !== null;
+      const hasPhone =
+        data.emergencyContactPhone !== undefined && data.emergencyContactPhone !== null;
       const hasName = data.emergencyContactName !== undefined && data.emergencyContactName !== null;
       if (hasPhone && !hasName) return false;
       return true;
     },
-    { message: "Emergency contact name is required when providing a phone number.", path: ["emergencyContactName"] },
+    {
+      message: "Emergency contact name is required when providing a phone number.",
+      path: ["emergencyContactName"],
+    },
   );
 
 export const changePasswordSchema = z

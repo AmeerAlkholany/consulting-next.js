@@ -1,17 +1,29 @@
 "use client";
 
 import * as React from "react";
-import { Controller, useForm } from "react-hook-form";
+
+import { Controller, useForm, useWatch } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
+
 import { FormField, FormMessage } from "@/components/form-field";
+
 import { Button } from "@/components/ui/button";
+
 import { Checkbox } from "@/components/ui/checkbox";
+
 import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
+
 import { assessPasswordStrength, describePasswordRequirements } from "@/lib/password-strength";
+
 import { registerSchema, type RegisterInput } from "@/schemas/auth";
+
 import { registerAction } from "./actions";
+
 import { initialAuthFormState } from "./form-state";
+
 import { RoleChoice } from "./role-choice";
 
 /**
@@ -23,17 +35,16 @@ import { RoleChoice } from "./role-choice";
  * person's own zone (§19, BR-15), and stay truthful when the server cannot
  * create the account (a duplicate address is answered generically).
  */
-
 function RegisterForm() {
   const [state, dispatch, pending] = React.useActionState(registerAction, initialAuthFormState);
+
   const {
     register,
     control,
     trigger,
-    watch,
     setValue,
     formState: { errors },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useForm<any>({
     // @ts-expect-error Zod v4 schema shape incompatibility with @hookform/resolvers
     resolver: zodResolver(registerSchema),
@@ -49,9 +60,12 @@ function RegisterForm() {
     },
   });
 
-  const role = watch("role");
-  const accepted = watch("acceptTerms");
-  const passwordValue = watch("password") ?? "";
+  // useWatch is the React Compiler-friendly alternative to watch().
+  // It returns stable values and doesn't create new function references each render.
+  const role = useWatch({ control, name: "role" });
+  const accepted = useWatch({ control, name: "acceptTerms" });
+  const passwordValue = useWatch({ control, name: "password" }) ?? "";
+
   const passwordStrength = assessPasswordStrength(passwordValue);
 
   // The zone is captured in the browser: the server cannot know it, and a
@@ -68,14 +82,21 @@ function RegisterForm() {
     return state.fieldErrors[field]?.[0] ?? errors[field]?.message;
   }
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!(await trigger())) {
+    // Save the form element before awaiting trigger().
+    // After an await, event.currentTarget may no longer be the HTMLFormElement.
+    const form = event.currentTarget;
+
+    const isValid = await trigger();
+
+    if (!isValid) {
       return;
     }
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
+
     React.startTransition(() => {
       dispatch(formData);
     });
@@ -85,6 +106,7 @@ function RegisterForm() {
     return (
       <div className="flex flex-col gap-5">
         <FormMessage tone="success">{state.message}</FormMessage>
+
         <p className="text-sm text-muted-foreground">
           If you already had an account, sign in or reset your password from the sign-in page.
         </p>
@@ -98,7 +120,6 @@ function RegisterForm() {
   const confirmError = fieldError("confirmPassword");
   const roleError = fieldError("role");
   const termsError = fieldError("acceptTerms");
-
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
@@ -154,9 +175,11 @@ function RegisterForm() {
             aria-describedby={passwordError ? "password-error" : "password-hint"}
             {...register("password")}
           />
-          {watch("password") ? (
+
+          {passwordValue ? (
             <p className="text-sm text-muted-foreground" aria-live="polite">
               <span className="font-medium text-foreground">{passwordStrength.label}</span>
+
               {passwordStrength.missing.length > 0 ? ` — ${passwordStrength.missing[0]}` : null}
             </p>
           ) : null}
@@ -186,6 +209,7 @@ function RegisterForm() {
               aria-invalid={termsError ? true : undefined}
               aria-describedby={termsError ? "acceptTerms-error" : undefined}
             />
+
             <Label htmlFor="acceptTerms" className="text-sm font-normal leading-snug">
               I accept the terms of service and the privacy policy, and I understand that this
               platform is not an emergency service.
@@ -193,6 +217,7 @@ function RegisterForm() {
           </div>
         )}
       />
+
       {termsError ? (
         <p id="acceptTerms-error" role="alert" className="text-sm font-medium text-danger">
           {termsError}
@@ -202,6 +227,7 @@ function RegisterForm() {
       {/* Carried with the submission rather than shown. Without JavaScript it
           stays empty, which the server normalises to UTC. */}
       <input type="hidden" {...register("timezone")} />
+
       <input type="hidden" name="acceptTerms" value={accepted ? "on" : "off"} readOnly />
 
       <Button type="submit" disabled={pending} aria-busy={pending}>

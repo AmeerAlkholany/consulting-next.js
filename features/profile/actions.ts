@@ -1,16 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getClientProfile } from "@/server/dal/client-profile";
 import { requireClient } from "@/server/authz/guards";
-import { getCurrentUser } from "@/server/auth/dal";
 import {
   updateClientProfile,
   changePassword as changePasswordService,
   requestAccountDeletion,
   type Blocker,
 } from "@/server/services/clients";
-import { clientProfileSchema, changePasswordSchema, requestAccountDeletionSchema } from "@/schemas/client-profile";
+import {
+  clientProfileSchema,
+  changePasswordSchema,
+  requestAccountDeletionSchema,
+} from "@/schemas/client-profile";
 import { verifyPassword } from "@/server/auth/password";
 import { formError, formSuccess, parseForm, type AuthFormState } from "@/features/auth/form-state";
 

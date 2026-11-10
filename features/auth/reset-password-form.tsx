@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+
+import { useForm, useWatch } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+
 import { FormField, FormMessage } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,13 +28,16 @@ export interface ResetPasswordFormProps {
 }
 
 function ResetPasswordForm({ token }: ResetPasswordFormProps) {
-  const [state, dispatch, pending] = React.useActionState(resetPasswordAction, initialAuthFormState);
+  const [state, dispatch, pending] = React.useActionState(
+    resetPasswordAction,
+    initialAuthFormState,
+  );
   const {
     register,
     trigger,
-    watch,
+    control,
     formState: { errors },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useForm<any>({
     // @ts-expect-error Zod v4 schema shape incompatibility with @hookform/resolvers
     resolver: zodResolver(resetPasswordSchema),
@@ -40,7 +45,8 @@ function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     defaultValues: { token, password: "", confirmPassword: "" },
   });
 
-  const passwordValue = watch("password") ?? "";
+  // useWatch is the React Compiler-friendly alternative to watch().
+  const passwordValue = useWatch({ control, name: "password" }) ?? "";
   const strength = assessPasswordStrength(passwordValue);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -67,7 +73,7 @@ function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           Every device that was signed in to your account has been signed out.
         </p>
         <Button asChild>
-          <Link href="/login">Sign in</Link>
+          <a href="/login">Sign in</a>
         </Button>
       </div>
     );
@@ -95,9 +101,10 @@ function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             aria-describedby={passwordError ? "password-error" : "password-hint"}
             {...register("password")}
           />
-          {watch("password") ? (
+          {passwordValue ? (
             <p className="text-sm text-muted-foreground">
-              Password strength: <span className="font-medium text-foreground">{strength.label}</span>
+              Password strength:{" "}
+              <span className="font-medium text-foreground">{strength.label}</span>
               {strength.missing.length > 0 ? ` — ${strength.missing[0]}` : null}
             </p>
           ) : null}

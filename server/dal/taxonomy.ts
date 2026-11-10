@@ -58,7 +58,9 @@ export async function getSpecializationById(id: string): Promise<SpecializationR
 }
 
 /** Fetches active specializations for selection lists. */
-export async function getActiveSpecializations(): Promise<Pick<SpecializationRow, "id" | "slug" | "name">[]> {
+export async function getActiveSpecializations(): Promise<
+  Pick<SpecializationRow, "id" | "slug" | "name">[]
+> {
   const rows = await db.specialization.findMany({
     where: { isActive: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],

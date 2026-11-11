@@ -43,6 +43,7 @@ export default defineConfig({
             "tests/unit/**/*.test.ts",
             "tests/db/**/*.test.ts",
             "tests/integration/**/*.test.ts",
+            "tests/performance/**/*.test.ts",
           ],
           setupFiles: ["tests/setup.ts"],
           fileParallelism: false,

@@ -14,6 +14,15 @@ const nextConfig: NextConfig = {
 
   // Security headers configured per ARCHITECTURE.md §16.
   // Dynamic CSP nonce injection is performed in proxy.ts.
+  experimental: {
+    optimizePackageImports: ["lucide-react", "date-fns"],
+  },
+
+  images: {
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [],
+  },
+
   async headers() {
     return [
       {

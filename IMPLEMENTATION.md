@@ -1,6 +1,6 @@
 # Implementation Plan — Psychological Consultation Booking Platform
 
-**Status:** Steps 1 through 20 completed and verified. Next step: Step 21 (Test suite completion).
+**Status:** Steps 1 through 21 completed and verified. Next step: Step 22 (Performance optimization).
 **Companion documents:** [ARCHITECTURE.md](./ARCHITECTURE.md) (the design this plan realizes) and [ADR.md](./ADR.md) (why each choice was made).
 
 ---
@@ -62,8 +62,8 @@
 | 18  | Scheduled jobs and email delivery          | 16             | Completed   |
 | 19  | Security hardening                         | 1–18           | Completed   |
 | 20  | UX states, accessibility, and error polish | 2, 5–17        | Completed   |
-| 21  | Test suite completion                      | 1–20           | Up Next     |
-| 22  | Performance optimization                   | 21             | Pending     |
+| 21  | Test suite completion                      | 1–20           | Completed   |
+| 22  | Performance optimization                   | 21             | Up Next     |
 | 23  | Production preparation                     | 19, 21, 22     | Pending     |
 | 24  | Final audit                                | 1–23           | Pending     |
 

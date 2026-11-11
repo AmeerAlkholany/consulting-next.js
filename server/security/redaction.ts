@@ -84,4 +84,3 @@ export function sanitizeLogPayload<T>(payload: T): T {
 
   return sanitized as T;
 }
-

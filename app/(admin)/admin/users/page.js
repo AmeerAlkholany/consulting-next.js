@@ -1,1 +1,3 @@
-export default function UsersPage(){return null;}
+export default function UsersPage() {
+  return null;
+}

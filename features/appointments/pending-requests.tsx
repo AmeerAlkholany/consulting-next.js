@@ -45,7 +45,8 @@ export function PendingRequests({ requests }: PendingRequestsProps) {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
                   <span>
-                    {format(startsAt, "MMM d, h:mm a")} – {format(endsAt, "h:mm a")} ({req.consultantTimezone})
+                    {format(startsAt, "MMM d, h:mm a")} – {format(endsAt, "h:mm a")} (
+                    {req.consultantTimezone})
                   </span>
                 </div>
               </div>
@@ -62,4 +63,3 @@ export function PendingRequests({ requests }: PendingRequestsProps) {
     </Card>
   );
 }
-

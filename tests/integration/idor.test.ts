@@ -6,10 +6,7 @@ import {
   confirmAppointment,
   declineAppointment,
 } from "@/server/services/booking";
-import {
-  getAppointmentNotes,
-  upsertAppointmentNote,
-} from "@/server/services/appointment-notes";
+import { getAppointmentNotes, upsertAppointmentNote } from "@/server/services/appointment-notes";
 import { updateReview } from "@/server/services/reviews";
 import { deleteRule } from "@/server/services/availability";
 import { markNotificationAsRead } from "@/server/dal/notification";
@@ -197,7 +194,7 @@ describe("IDOR Matrix & Multi-Tenant Partitioning Integration Tests (Step 19)", 
         cancelAppointment(sessionClientB, {
           appointmentId: appointmentA.id,
           reason: "Malicious cancellation attempt",
-        })
+        }),
       ).rejects.toThrow("You don't have access to this appointment.");
 
       // Client B attempts to reschedule Client A's appointment
@@ -206,13 +203,12 @@ describe("IDOR Matrix & Multi-Tenant Partitioning Integration Tests (Step 19)", 
           appointmentId: appointmentA.id,
           startsAt: new Date(Date.now() + 72 * 3600000).toISOString(),
           endsAt: new Date(Date.now() + 72 * 3600000 + 3000000).toISOString(),
-        })
+        }),
       ).rejects.toThrow("You don't have access to this appointment.");
     });
 
     it("refuses consultant confirmation or decline of another consultant's appointment", async () => {
-      const { sessionConsB, profileConsA, profileClientA } =
-        await createTwoClientsAndConsultants();
+      const { sessionConsB, profileConsA, profileClientA } = await createTwoClientsAndConsultants();
 
       // Appointment assigned to Consultant A
       const appointmentA = await prisma.appointment.create({
@@ -278,9 +274,9 @@ describe("IDOR Matrix & Multi-Tenant Partitioning Integration Tests (Step 19)", 
       });
 
       // Consultant B attempts to read Consultant A's session notes
-      await expect(
-        getAppointmentNotes(sessionConsB, appointmentA.id)
-      ).rejects.toThrow("Appointment not found");
+      await expect(getAppointmentNotes(sessionConsB, appointmentA.id)).rejects.toThrow(
+        "Appointment not found",
+      );
     });
   });
 
@@ -299,9 +295,9 @@ describe("IDOR Matrix & Multi-Tenant Partitioning Integration Tests (Step 19)", 
       });
 
       // Consultant B attempts to delete Consultant A's rule
-      await expect(
-        deleteRule({ id: sessionConsB.id }, profileConsA.id, ruleA.id)
-      ).rejects.toThrow("Not your profile.");
+      await expect(deleteRule({ id: sessionConsB.id }, profileConsA.id, ruleA.id)).rejects.toThrow(
+        "Not your profile.",
+      );
     });
   });
 
@@ -343,7 +339,7 @@ describe("IDOR Matrix & Multi-Tenant Partitioning Integration Tests (Step 19)", 
           reviewId: reviewA.id,
           rating: 1,
           comment: "Hijacked review",
-        })
+        }),
       ).rejects.toThrow("You do not have access to edit this review.");
     });
   });

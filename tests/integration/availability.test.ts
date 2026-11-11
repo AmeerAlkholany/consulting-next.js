@@ -223,9 +223,9 @@ describe("Availability integration tests", () => {
       ).rejects.toThrow(AuthorizationError);
 
       // Consultant B attempts to delete Consultant A's rule
-      await expect(
-        deleteRule({ id: consultantB.id }, profileA.id, rule.id),
-      ).rejects.toThrow(AuthorizationError);
+      await expect(deleteRule({ id: consultantB.id }, profileA.id, rule.id)).rejects.toThrow(
+        AuthorizationError,
+      );
     });
   });
 
@@ -369,4 +369,3 @@ describe("Availability integration tests", () => {
     });
   });
 });
-

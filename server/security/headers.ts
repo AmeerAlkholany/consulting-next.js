@@ -34,4 +34,3 @@ export function getSecurityHeaders(options: SecurityHeadersOptions = {}): Record
 
   return headers;
 }
-

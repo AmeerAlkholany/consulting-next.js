@@ -40,32 +40,32 @@
 
 ## Step map
 
-| #   | Step                                       | Depends on     | Status      |
-| --- | ------------------------------------------ | -------------- | ----------- |
-| 1   | Project foundation and tooling baseline    | —              | Completed   |
-| 2   | Shared infrastructure and design system    | 1              | Completed   |
-| 3   | Database, Prisma schema, and seed          | 1              | Completed   |
-| 4   | Authentication                             | 2, 3           | Completed   |
-| 5   | Authorization, RBAC, and route protection  | 4              | Completed   |
-| 6   | Client profiles                            | 5              | Completed   |
-| 7   | Specializations and languages taxonomy     | 5              | Completed   |
-| 8   | Consultant profiles and onboarding         | 5, 7           | Completed   |
-| 9   | Consultant verification (admin)            | 8              | Completed   |
-| 10  | Consultant discovery                       | 8, 9           | Completed   |
-| 11  | Availability system                        | 8, 9           | Completed   |
-| 12  | Booking system                             | 6, 10, 11      | Completed   |
-| 13  | Client appointment workspace               | 12             | Completed   |
-| 14  | Consultant appointment workspace           | 12             | Completed   |
-| 15  | Admin console                              | 9, 13, 14      | Completed   |
-| 16  | Notifications                              | 12, 13, 14, 15 | Completed   |
-| 17  | Reviews and ratings                        | 13, 14         | Completed   |
-| 18  | Scheduled jobs and email delivery          | 16             | Completed   |
-| 19  | Security hardening                         | 1–18           | Completed   |
-| 20  | UX states, accessibility, and error polish | 2, 5–17        | Completed   |
-| 21  | Test suite completion                      | 1–20           | Completed   |
-| 22  | Performance optimization                   | 21             | Completed   |
-| 23  | Production preparation                     | 19, 21, 22     | Completed   |
-| 24  | Final audit                                | 1–23           | Completed   |
+| #   | Step                                       | Depends on     | Status    |
+| --- | ------------------------------------------ | -------------- | --------- |
+| 1   | Project foundation and tooling baseline    | —              | Completed |
+| 2   | Shared infrastructure and design system    | 1              | Completed |
+| 3   | Database, Prisma schema, and seed          | 1              | Completed |
+| 4   | Authentication                             | 2, 3           | Completed |
+| 5   | Authorization, RBAC, and route protection  | 4              | Completed |
+| 6   | Client profiles                            | 5              | Completed |
+| 7   | Specializations and languages taxonomy     | 5              | Completed |
+| 8   | Consultant profiles and onboarding         | 5, 7           | Completed |
+| 9   | Consultant verification (admin)            | 8              | Completed |
+| 10  | Consultant discovery                       | 8, 9           | Completed |
+| 11  | Availability system                        | 8, 9           | Completed |
+| 12  | Booking system                             | 6, 10, 11      | Completed |
+| 13  | Client appointment workspace               | 12             | Completed |
+| 14  | Consultant appointment workspace           | 12             | Completed |
+| 15  | Admin console                              | 9, 13, 14      | Completed |
+| 16  | Notifications                              | 12, 13, 14, 15 | Completed |
+| 17  | Reviews and ratings                        | 13, 14         | Completed |
+| 18  | Scheduled jobs and email delivery          | 16             | Completed |
+| 19  | Security hardening                         | 1–18           | Completed |
+| 20  | UX states, accessibility, and error polish | 2, 5–17        | Completed |
+| 21  | Test suite completion                      | 1–20           | Completed |
+| 22  | Performance optimization                   | 21             | Completed |
+| 23  | Production preparation                     | 19, 21, 22     | Completed |
+| 24  | Final audit                                | 1–23           | Completed |
 
 ---
 

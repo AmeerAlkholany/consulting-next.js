@@ -181,10 +181,7 @@ export function BookingConfirmation({
 
       <NoteField value={clientNote} onChange={setClientNote} disabled={isPending} />
 
-      <PolicyNotice
-        cancellationWindowHours={cancellationWindowHours}
-        autoConfirm={autoConfirm}
-      />
+      <PolicyNotice cancellationWindowHours={cancellationWindowHours} autoConfirm={autoConfirm} />
 
       <div className="pt-4 flex items-center justify-between gap-4">
         <Button variant="outline" asChild disabled={isPending}>
@@ -210,4 +207,3 @@ export function BookingConfirmation({
     </div>
   );
 }
-

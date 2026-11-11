@@ -21,9 +21,7 @@ export function NotificationList({
   const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
 
   const handleItemMarkRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, readAt: new Date() } : n)),
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date() } : n)));
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 

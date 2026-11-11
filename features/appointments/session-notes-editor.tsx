@@ -6,10 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Lock, Save, Trash2, Edit3, Shield } from "lucide-react";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
-import {
-  upsertAppointmentNoteAction,
-  deleteAppointmentNoteAction,
-} from "./consultant-actions";
+import { upsertAppointmentNoteAction, deleteAppointmentNoteAction } from "./consultant-actions";
 
 export interface SerializedNote {
   id: string;
@@ -23,10 +20,7 @@ interface SessionNotesEditorProps {
   initialNotes: SerializedNote[];
 }
 
-export function SessionNotesEditor({
-  appointmentId,
-  initialNotes,
-}: SessionNotesEditorProps) {
+export function SessionNotesEditor({ appointmentId, initialNotes }: SessionNotesEditorProps) {
   const [notes, setNotes] = useState<SerializedNote[]>(initialNotes);
   const [newBody, setNewBody] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -79,9 +73,7 @@ export function SessionNotesEditor({
         return;
       }
 
-      setNotes((prev) =>
-        prev.map((n) => (n.id === noteId ? { ...n, body: editBody.trim() } : n)),
-      );
+      setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, body: editBody.trim() } : n)));
       setEditingId(null);
       setEditBody("");
     });
@@ -110,7 +102,8 @@ export function SessionNotesEditor({
               Private Clinical Notes
             </CardTitle>
             <CardDescription className="text-xs">
-              Encrypted at rest with AES-256-GCM. Visible strictly to you (never shown to client or platform admins).
+              Encrypted at rest with AES-256-GCM. Visible strictly to you (never shown to client or
+              platform admins).
             </CardDescription>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
@@ -121,9 +114,7 @@ export function SessionNotesEditor({
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
-          <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">
-            {error}
-          </div>
+          <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">{error}</div>
         )}
 
         <div className="space-y-2">
@@ -156,10 +147,7 @@ export function SessionNotesEditor({
             </p>
           ) : (
             notes.map((note) => (
-              <div
-                key={note.id}
-                className="p-3.5 rounded-lg border bg-card/50 text-sm space-y-2"
-              >
+              <div key={note.id} className="p-3.5 rounded-lg border bg-card/50 text-sm space-y-2">
                 {editingId === note.id ? (
                   <div className="space-y-2">
                     <Textarea
@@ -237,4 +225,3 @@ export function SessionNotesEditor({
     </Card>
   );
 }
-

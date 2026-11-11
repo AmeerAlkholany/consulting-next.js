@@ -7,7 +7,12 @@ import {
   pruneSystem,
   verifyCronSecret,
 } from "@/server/services/jobs";
-import { setEmailProviderForTest, type EmailProvider, type SendEmailOptions, type SendEmailResult } from "@/server/email/provider";
+import {
+  setEmailProviderForTest,
+  type EmailProvider,
+  type SendEmailOptions,
+  type SendEmailResult,
+} from "@/server/email/provider";
 import { POST as completePost } from "@/app/api/cron/complete-appointments/route";
 import { POST as remindersPost } from "@/app/api/cron/send-reminders/route";
 import { POST as drainPost } from "@/app/api/cron/drain-outbox/route";
@@ -135,7 +140,8 @@ describe("Scheduled Jobs & Email Delivery Pipeline (Step 18)", () => {
 
   describe("completePastAppointments", () => {
     it("completes confirmed appointments past grace period and writes notifications idempotently", async () => {
-      const { consultantProfile, clientProfile, clientUser } = await createFixtureConsultantAndClient();
+      const { consultantProfile, clientProfile, clientUser } =
+        await createFixtureConsultantAndClient();
       const now = new Date();
 
       // Appt 1: CONFIRMED, ended 3 hours ago (> 2h grace period)
@@ -394,7 +400,9 @@ describe("Scheduled Jobs & Email Delivery Pipeline (Step 18)", () => {
       });
 
       await drainOutbox({ batchSize: 10, now, allowNullProviderInTest: true });
-      const permanentlyFailed = await prisma.emailOutbox.findUnique({ where: { id: failingRow.id } });
+      const permanentlyFailed = await prisma.emailOutbox.findUnique({
+        where: { id: failingRow.id },
+      });
       expect(permanentlyFailed?.status).toBe("FAILED");
       expect(permanentlyFailed?.attempts).toBe(5);
     });
@@ -489,7 +497,9 @@ describe("Scheduled Jobs & Email Delivery Pipeline (Step 18)", () => {
       expect(remainingSessions.length).toBe(1);
 
       // Verify active token kept
-      const remainingTokens = await prisma.verificationToken.findMany({ where: { userId: clientUser.id } });
+      const remainingTokens = await prisma.verificationToken.findMany({
+        where: { userId: clientUser.id },
+      });
       expect(remainingTokens.length).toBe(1);
 
       // Verify stale appointment was cancelled by SYSTEM

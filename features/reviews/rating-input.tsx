@@ -57,13 +57,13 @@ export function RatingInput({
               onMouseEnter={() => !disabled && setHoverRating(star)}
               className={cn(
                 "p-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
-                isFilled ? "text-yellow-500" : "text-muted-foreground/30 hover:text-yellow-500/60"
+                isFilled ? "text-yellow-500" : "text-muted-foreground/30 hover:text-yellow-500/60",
               )}
             >
               <Star
                 className={cn(
                   "h-7 w-7 transition-transform active:scale-95",
-                  isFilled ? "fill-current" : "fill-none"
+                  isFilled ? "fill-current" : "fill-none",
                 )}
               />
             </button>

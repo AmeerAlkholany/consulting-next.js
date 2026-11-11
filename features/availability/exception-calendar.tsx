@@ -277,9 +277,7 @@ export function ExceptionCalendar({ exceptions }: ExceptionCalendarProps) {
                     {exc.type === "BLOCK" ? "Blocked" : "Extra Hours"}
                   </Badge>
 
-                  <span className="font-medium font-mono">
-                    {exc.date.split("T")[0]}
-                  </span>
+                  <span className="font-medium font-mono">{exc.date.split("T")[0]}</span>
 
                   <span className="text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5" />
@@ -289,9 +287,7 @@ export function ExceptionCalendar({ exceptions }: ExceptionCalendarProps) {
                   </span>
 
                   {exc.reason && (
-                    <span className="text-xs text-muted-foreground italic">
-                      ({exc.reason})
-                    </span>
+                    <span className="text-xs text-muted-foreground italic">({exc.reason})</span>
                   )}
                 </div>
 
@@ -321,4 +317,3 @@ export function ExceptionCalendar({ exceptions }: ExceptionCalendarProps) {
     </Card>
   );
 }
-

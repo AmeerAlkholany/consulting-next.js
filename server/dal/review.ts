@@ -32,7 +32,7 @@ export interface ConsultantReviewItem {
  */
 export async function getPublicReviewsForConsultant(
   consultantProfileId: string,
-  options: { page?: number; perPage?: number } = {}
+  options: { page?: number; perPage?: number } = {},
 ): Promise<{
   reviews: PublicReviewItem[];
   total: number;
@@ -98,7 +98,7 @@ export async function getPublicReviewsForConsultant(
  */
 export async function getConsultantReviews(
   consultantProfileId: string,
-  options: { page?: number; perPage?: number } = {}
+  options: { page?: number; perPage?: number } = {},
 ): Promise<{
   reviews: ConsultantReviewItem[];
   total: number;
@@ -194,9 +194,11 @@ export async function getReviewByAppointmentId(appointmentId: string) {
  */
 export async function getClientReviewableAppointments(
   clientProfileId: string,
-  now: Date = new Date()
+  now: Date = new Date(),
 ) {
-  const windowStart = new Date(now.getTime() - BOOKING_POLICY.reviewWindowDays * 24 * 60 * 60 * 1000);
+  const windowStart = new Date(
+    now.getTime() - BOOKING_POLICY.reviewWindowDays * 24 * 60 * 60 * 1000,
+  );
 
   return db.appointment.findMany({
     where: {

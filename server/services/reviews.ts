@@ -25,7 +25,12 @@ export interface ReviewSuccessResult {
 
 export interface ReviewErrorResult {
   status: "error";
-  code: "NOT_ELIGIBLE" | "ALREADY_REVIEWED" | "REVIEW_WINDOW_CLOSED" | "EDIT_WINDOW_CLOSED" | "NOT_FOUND";
+  code:
+    | "NOT_ELIGIBLE"
+    | "ALREADY_REVIEWED"
+    | "REVIEW_WINDOW_CLOSED"
+    | "EDIT_WINDOW_CLOSED"
+    | "NOT_FOUND";
   message: string;
 }
 
@@ -39,7 +44,7 @@ export type ReviewMutationResult = ReviewSuccessResult | ReviewErrorResult;
  */
 export async function createReview(
   actor: SessionUser,
-  input: CreateReviewInput
+  input: CreateReviewInput,
 ): Promise<ReviewMutationResult> {
   if (actor.role !== "CLIENT") {
     throw new AuthorizationError("Only clients can submit reviews.");
@@ -158,7 +163,7 @@ export async function createReview(
             data: emailTemplate,
           },
         },
-        tx
+        tx,
       );
 
       return review;
@@ -166,7 +171,7 @@ export async function createReview(
 
     logger.info(
       { reviewId: result.id, appointmentId: appointment.id, rating: validated.rating },
-      "review created and rating aggregates updated"
+      "review created and rating aggregates updated",
     );
 
     return { status: "ok", reviewId: result.id };
@@ -188,7 +193,7 @@ export async function createReview(
  */
 export async function updateReview(
   actor: SessionUser,
-  input: UpdateReviewInput
+  input: UpdateReviewInput,
 ): Promise<ReviewMutationResult> {
   if (actor.role !== "CLIENT") {
     throw new AuthorizationError("Only clients can edit their reviews.");
@@ -265,7 +270,7 @@ export async function updateReview(
 
   logger.info(
     { reviewId: review.id, oldRating: review.rating, newRating: validated.rating },
-    "review updated"
+    "review updated",
   );
 
   return { status: "ok", reviewId: review.id };
@@ -279,7 +284,7 @@ export async function updateReview(
  */
 export async function unpublishReview(
   actor: SessionUser,
-  input: UnpublishReviewInput
+  input: UnpublishReviewInput,
 ): Promise<ReviewMutationResult> {
   if (actor.role !== "ADMIN") {
     throw new AuthorizationError("Only administrators can moderate reviews.");
@@ -343,7 +348,7 @@ export async function unpublishReview(
 
   logger.info(
     { reviewId: review.id, adminId: actor.id, reason: validated.reason },
-    "review unpublished by admin and aggregates decremented"
+    "review unpublished by admin and aggregates decremented",
   );
 
   return { status: "ok", reviewId: review.id };

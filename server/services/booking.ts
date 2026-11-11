@@ -235,7 +235,8 @@ export async function createBooking(
       }
       return {
         status: "conflict",
-        message: "SLOT_TAKEN: This slot was just booked by someone else. Please choose another slot.",
+        message:
+          "SLOT_TAKEN: This slot was just booked by someone else. Please choose another slot.",
       };
     }
     throw err;
@@ -756,7 +757,10 @@ export async function confirmAppointment(
       return apt;
     });
 
-    logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment confirmed");
+    logger.info(
+      { appointmentId: updated.id, consultantId: consultantProfile.id },
+      "appointment confirmed",
+    );
     return { status: "ok", appointmentId: updated.id };
   } catch (err: unknown) {
     const exclusion = isExclusionViolation(err);
@@ -859,7 +863,10 @@ export async function declineAppointment(
     return apt;
   });
 
-  logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment declined");
+  logger.info(
+    { appointmentId: updated.id, consultantId: consultantProfile.id },
+    "appointment declined",
+  );
   return { status: "ok", appointmentId: updated.id };
 }
 
@@ -951,7 +958,10 @@ export async function completeAppointment(
     return apt;
   });
 
-  logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment marked completed");
+  logger.info(
+    { appointmentId: updated.id, consultantId: consultantProfile.id },
+    "appointment marked completed",
+  );
   return { status: "ok", appointmentId: updated.id };
 }
 
@@ -1001,6 +1011,9 @@ export async function markNoShowAppointment(
     select: { id: true },
   });
 
-  logger.info({ appointmentId: updated.id, consultantId: consultantProfile.id }, "appointment marked no-show");
+  logger.info(
+    { appointmentId: updated.id, consultantId: consultantProfile.id },
+    "appointment marked no-show",
+  );
   return { status: "ok", appointmentId: updated.id };
 }

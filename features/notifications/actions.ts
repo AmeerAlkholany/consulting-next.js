@@ -2,10 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/server/auth/dal";
-import {
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-} from "@/server/dal/notification";
+import { markNotificationAsRead, markAllNotificationsAsRead } from "@/server/dal/notification";
 import { markNotificationReadSchema } from "@/schemas/notification";
 
 export interface ActionResult {

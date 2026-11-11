@@ -2,14 +2,16 @@ import { prisma } from "@/tests/helpers/db";
 import { hashPassword } from "@/server/auth/password";
 import type { User, ConsultantProfile } from "@/db/generated/prisma/client";
 
-export async function createTestUser(params?: Partial<{
-  email: string;
-  fullName: string;
-  role: "CLIENT" | "CONSULTANT" | "ADMIN";
-  status: "ACTIVE" | "SUSPENDED" | "DEACTIVATED";
-  timezone: string;
-  emailVerified: boolean;
-}>): Promise<User> {
+export async function createTestUser(
+  params?: Partial<{
+    email: string;
+    fullName: string;
+    role: "CLIENT" | "CONSULTANT" | "ADMIN";
+    status: "ACTIVE" | "SUSPENDED" | "DEACTIVATED";
+    timezone: string;
+    emailVerified: boolean;
+  }>,
+): Promise<User> {
   const id = crypto.randomUUID();
   const passwordHash = await hashPassword("ValidPassword123!");
   const role = params?.role ?? "CLIENT";
@@ -37,17 +39,19 @@ export async function createTestUser(params?: Partial<{
   });
 }
 
-export async function createTestConsultant(params?: Partial<{
-  user: Partial<Parameters<typeof createTestUser>[0]>;
-  slug: string;
-  headline: string;
-  bio: string;
-  priceMinor: number;
-  durationMinutes: number;
-  verificationStatus: "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
-  isAcceptingBookings: boolean;
-  timezone: string;
-}>): Promise<{ user: User; profile: ConsultantProfile }> {
+export async function createTestConsultant(
+  params?: Partial<{
+    user: Partial<Parameters<typeof createTestUser>[0]>;
+    slug: string;
+    headline: string;
+    bio: string;
+    priceMinor: number;
+    durationMinutes: number;
+    verificationStatus: "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
+    isAcceptingBookings: boolean;
+    timezone: string;
+  }>,
+): Promise<{ user: User; profile: ConsultantProfile }> {
   const user = await createTestUser({
     ...params?.user,
     role: "CONSULTANT",

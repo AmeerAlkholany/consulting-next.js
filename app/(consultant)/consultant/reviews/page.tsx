@@ -19,9 +19,7 @@ export const metadata = {
   description: "View and manage feedback from your consultation sessions.",
 };
 
-export default async function ConsultantReviewsPage({
-  searchParams,
-}: ConsultantReviewsPageProps) {
+export default async function ConsultantReviewsPage({ searchParams }: ConsultantReviewsPageProps) {
   const user = await requireConsultant({ approved: true });
   const { page: rawPage } = await searchParams;
   const page = Math.max(1, parseInt(rawPage || "1", 10) || 1);
@@ -80,7 +78,8 @@ export default async function ConsultantReviewsPage({
                 />
               </div>
               <span className="text-xs text-muted-foreground mt-2">
-                Based on {profile.ratingCount} published {profile.ratingCount === 1 ? "review" : "reviews"}
+                Based on {profile.ratingCount} published{" "}
+                {profile.ratingCount === 1 ? "review" : "reviews"}
               </span>
             </div>
           </CardContent>

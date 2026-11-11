@@ -3,7 +3,11 @@ import { BOOKING_POLICY } from "@/config/booking";
 
 export const createReviewSchema = z.object({
   appointmentId: z.string().uuid("Invalid appointment ID"),
-  rating: z.coerce.number().int().min(1, "Rating must be at least 1 star").max(5, "Rating cannot exceed 5 stars"),
+  rating: z.coerce
+    .number()
+    .int()
+    .min(1, "Rating must be at least 1 star")
+    .max(5, "Rating cannot exceed 5 stars"),
   comment: z
     .string()
     .trim()
@@ -15,7 +19,11 @@ export const createReviewSchema = z.object({
 
 export const updateReviewSchema = z.object({
   reviewId: z.string().uuid("Invalid review ID"),
-  rating: z.coerce.number().int().min(1, "Rating must be at least 1 star").max(5, "Rating cannot exceed 5 stars"),
+  rating: z.coerce
+    .number()
+    .int()
+    .min(1, "Rating must be at least 1 star")
+    .max(5, "Rating cannot exceed 5 stars"),
   comment: z
     .string()
     .trim()
@@ -27,7 +35,11 @@ export const updateReviewSchema = z.object({
 
 export const unpublishReviewSchema = z.object({
   reviewId: z.string().uuid("Invalid review ID"),
-  reason: z.string().trim().min(3, "A moderation reason is required (at least 3 characters)").max(500, "Reason cannot exceed 500 characters"),
+  reason: z
+    .string()
+    .trim()
+    .min(3, "A moderation reason is required (at least 3 characters)")
+    .max(500, "Reason cannot exceed 500 characters"),
 });
 
 export const reviewFilterSchema = z.object({
@@ -81,7 +93,7 @@ export function isWithinReviewEditWindow(createdAt: Date, now: Date = new Date()
  */
 export function isEligibleForReview(
   appointment: { status: string; endsAt: Date },
-  now: Date = new Date()
+  now: Date = new Date(),
 ): { eligible: boolean; reason?: string } {
   if (appointment.status !== "COMPLETED") {
     return {

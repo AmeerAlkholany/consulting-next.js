@@ -32,7 +32,7 @@ export class NullEmailProvider implements EmailProvider {
   async sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
     logger.info(
       { to: options.to, subject: options.subject, provider: "none" },
-      "development email skipped (EMAIL_PROVIDER=none)"
+      "development email skipped (EMAIL_PROVIDER=none)",
     );
     return {
       success: true,

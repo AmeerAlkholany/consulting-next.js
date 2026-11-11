@@ -84,7 +84,10 @@ export function ReviewCard({
             )}
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <div className="flex items-center text-yellow-500" aria-label={`${rating} out of 5 stars`}>
+            <div
+              className="flex items-center text-yellow-500"
+              aria-label={`${rating} out of 5 stars`}
+            >
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
@@ -101,7 +104,11 @@ export function ReviewCard({
         {isAdmin && isPublished && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 text-xs h-7 px-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:bg-destructive/10 text-xs h-7 px-2"
+              >
                 <ShieldAlert className="h-3.5 w-3.5 mr-1" />
                 Unpublish
               </Button>
@@ -110,8 +117,8 @@ export function ReviewCard({
               <DialogHeader>
                 <DialogTitle>Unpublish Review</DialogTitle>
                 <DialogDescription>
-                  This review will be removed from public view and the consultant&apos;s rating aggregates
-                  will be decremented accordingly. This action is audited.
+                  This review will be removed from public view and the consultant&apos;s rating
+                  aggregates will be decremented accordingly. This action is audited.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3 py-2">
@@ -129,7 +136,11 @@ export function ReviewCard({
                 {error && <p className="text-xs text-destructive">{error}</p>}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>
+                <Button
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
                   Cancel
                 </Button>
                 <Button variant="destructive" onClick={handleUnpublish} disabled={isSubmitting}>

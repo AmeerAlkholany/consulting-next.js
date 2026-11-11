@@ -46,7 +46,10 @@ export function unpackEncryptedEnvelope(envelope: string): EncryptedPayload {
 function getKey(keyId: string): Buffer {
   const activeKeyId = env.NOTES_ENCRYPTION_KEY_ID || "k1";
   if (keyId !== activeKeyId) {
-    logger.error({ requestedKeyId: keyId, activeKeyId }, "Requested encryption keyId is unknown or rotated out");
+    logger.error(
+      { requestedKeyId: keyId, activeKeyId },
+      "Requested encryption keyId is unknown or rotated out",
+    );
     throw new Error(`Unknown encryption key id: ${keyId}`);
   }
 
@@ -57,7 +60,9 @@ function getKey(keyId: string): Buffer {
 
   const keyBuffer = Buffer.from(base64Key, "base64");
   if (keyBuffer.length !== 32) {
-    throw new Error(`Invalid NOTES_ENCRYPTION_KEY length: expected 32 bytes, got ${keyBuffer.length}`);
+    throw new Error(
+      `Invalid NOTES_ENCRYPTION_KEY length: expected 32 bytes, got ${keyBuffer.length}`,
+    );
   }
 
   return keyBuffer;
@@ -111,4 +116,3 @@ export function decryptText(envelope: string): string | null {
     return null;
   }
 }
-

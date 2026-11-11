@@ -26,7 +26,10 @@ export default function ConsultantError({
         digest={error.digest}
         onRetry={reset}
         actions={
-          <Link href="/consultant/appointments" className={cn(buttonVariants({ variant: "outline" }))}>
+          <Link
+            href="/consultant/appointments"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
             View consultations
           </Link>
         }
@@ -34,4 +37,3 @@ export default function ConsultantError({
     </Container>
   );
 }
-

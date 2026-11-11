@@ -23,12 +23,12 @@ export async function sendRenderedEmail(params: {
     if (result.success) {
       logger.info(
         { to: params.to, subject: rendered.subject, messageId: result.messageId },
-        "email delivered successfully"
+        "email delivered successfully",
       );
     } else {
       logger.warn(
         { to: params.to, subject: rendered.subject, error: result.error },
-        "email delivery attempt failed"
+        "email delivery attempt failed",
       );
     }
 

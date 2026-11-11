@@ -1,13 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { cleanDatabase, disconnectDatabase, prisma } from "@/tests/helpers/db";
-import {
-  setUserStatus,
-  changeUserRole,
-  adminCancelAppointment,
-} from "@/server/services/admin";
-import {
-  getAppointmentsForAdminOversight,
-} from "@/server/dal/admin";
+import { setUserStatus, changeUserRole, adminCancelAppointment } from "@/server/services/admin";
+import { getAppointmentsForAdminOversight } from "@/server/dal/admin";
 import type { SessionUser } from "@/server/auth/dal";
 
 describe("Admin console integration tests", () => {
@@ -378,9 +372,7 @@ describe("Admin console integration tests", () => {
       const aptDb = await prisma.appointment.findUniqueOrThrow({ where: { id: apt.id } });
       expect(aptDb.status).toBe("CANCELLED");
       expect(aptDb.cancelledBy).toBe("ADMIN");
-      expect(aptDb.cancellationReason).toBe(
-        "Platform maintenance during scheduled time window.",
-      );
+      expect(aptDb.cancellationReason).toBe("Platform maintenance during scheduled time window.");
 
       const audit = await prisma.auditLog.findFirst({
         where: { entityId: apt.id, action: "APPOINTMENT_CANCELLED_BY_ADMIN" },
@@ -414,4 +406,3 @@ describe("Admin console integration tests", () => {
     });
   });
 });
-

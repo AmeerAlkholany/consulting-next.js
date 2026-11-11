@@ -8,10 +8,7 @@ import {
   completeAppointment,
   markNoShowAppointment,
 } from "@/server/services/booking";
-import {
-  upsertAppointmentNote,
-  deleteAppointmentNote,
-} from "@/server/services/appointment-notes";
+import { upsertAppointmentNote, deleteAppointmentNote } from "@/server/services/appointment-notes";
 import { upsertAppointmentNoteSchema } from "@/schemas/appointment-notes";
 
 export interface ActionResult {
@@ -118,4 +115,3 @@ export async function deleteAppointmentNoteAction(
     };
   }
 }
-

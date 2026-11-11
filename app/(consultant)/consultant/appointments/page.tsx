@@ -40,9 +40,7 @@ export default async function ConsultantAppointmentsPage({ searchParams }: PageP
   return (
     <Container className="py-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Appointment Schedule
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Appointment Schedule</h1>
         <p className="text-sm text-muted-foreground">
           View, manage, and complete consultation sessions.
         </p>
@@ -52,9 +50,7 @@ export default async function ConsultantAppointmentsPage({ searchParams }: PageP
         <Tabs value={currentTab} className="w-full">
           <TabsList className="grid grid-cols-4 w-full sm:w-[500px]">
             <TabsTrigger value="needs_response" asChild>
-              <Link href="/consultant/appointments?tab=needs_response">
-                Needs Response
-              </Link>
+              <Link href="/consultant/appointments?tab=needs_response">Needs Response</Link>
             </TabsTrigger>
             <TabsTrigger value="upcoming" asChild>
               <Link href="/consultant/appointments?tab=upcoming">Upcoming</Link>

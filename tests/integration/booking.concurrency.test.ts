@@ -346,4 +346,3 @@ describe("Booking concurrency & exclusion constraint tests", () => {
     expect(targetApts).toHaveLength(1);
   });
 });
-

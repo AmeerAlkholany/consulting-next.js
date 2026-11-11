@@ -15,11 +15,10 @@ export function TimezoneNotice({ timezone }: TimezoneNoticeProps) {
         </div>
         <CardDescription>
           All rules and availability intervals are interpreted in your local timezone:{" "}
-          <strong className="text-foreground">{timezone}</strong>. Rule times stay fixed on your wall
-          clock across Daylight Saving Time (DST) transitions.
+          <strong className="text-foreground">{timezone}</strong>. Rule times stay fixed on your
+          wall clock across Daylight Saving Time (DST) transitions.
         </CardDescription>
       </CardHeader>
     </Card>
   );
 }
-

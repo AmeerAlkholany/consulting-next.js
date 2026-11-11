@@ -3,16 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/server/auth/dal";
 import { AuthenticationError } from "@/server/errors";
-import {
-  createReview,
-  updateReview,
-  unpublishReview,
-} from "@/server/services/reviews";
-import {
-  createReviewSchema,
-  updateReviewSchema,
-  unpublishReviewSchema,
-} from "@/schemas/review";
+import { createReview, updateReview, unpublishReview } from "@/server/services/reviews";
+import { createReviewSchema, updateReviewSchema, unpublishReviewSchema } from "@/schemas/review";
 
 export interface ReviewActionState {
   success: boolean;
@@ -23,7 +15,7 @@ export interface ReviewActionState {
 
 export async function createReviewAction(
   _prevState: ReviewActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ReviewActionState> {
   const user = await getCurrentUser();
   if (!user) {
@@ -75,7 +67,7 @@ export async function createReviewAction(
 
 export async function updateReviewAction(
   _prevState: ReviewActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ReviewActionState> {
   const user = await getCurrentUser();
   if (!user) {
@@ -125,7 +117,7 @@ export async function updateReviewAction(
 
 export async function unpublishReviewAction(
   _prevState: ReviewActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ReviewActionState> {
   const user = await getCurrentUser();
   if (!user) {

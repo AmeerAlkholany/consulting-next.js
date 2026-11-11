@@ -35,9 +35,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
           <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
             {stats.pendingConsultantApplications}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Awaiting credential verification
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">Awaiting credential verification</p>
         </CardContent>
       </Card>
 

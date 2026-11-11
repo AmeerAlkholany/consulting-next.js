@@ -70,9 +70,7 @@ export default async function AdminAuditLogPage({ searchParams }: PageProps) {
             <option value="CONSULTANT_APPROVED">CONSULTANT_APPROVED</option>
             <option value="CONSULTANT_REJECTED">CONSULTANT_REJECTED</option>
             <option value="CONSULTANT_SUSPENDED">CONSULTANT_SUSPENDED</option>
-            <option value="APPOINTMENT_CANCELLED_BY_ADMIN">
-              APPOINTMENT_CANCELLED_BY_ADMIN
-            </option>
+            <option value="APPOINTMENT_CANCELLED_BY_ADMIN">APPOINTMENT_CANCELLED_BY_ADMIN</option>
           </select>
 
           <select

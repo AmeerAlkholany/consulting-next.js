@@ -69,20 +69,21 @@ export function RoleChangeDialog({
         <DialogHeader>
           <DialogTitle>Change User Role</DialogTitle>
           <DialogDescription>
-            Change authorization role for <span className="font-semibold text-foreground">{userName}</span>.
-            Role changes rotate all active sessions and adjust profile records.
+            Change authorization role for{" "}
+            <span className="font-semibold text-foreground">{userName}</span>. Role changes rotate
+            all active sessions and adjust profile records.
           </DialogDescription>
         </DialogHeader>
 
         {error && (
-          <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">
-            {error}
-          </div>
+          <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">{error}</div>
         )}
 
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <label htmlFor="target-role" className="text-sm font-medium">New Role</label>
+            <label htmlFor="target-role" className="text-sm font-medium">
+              New Role
+            </label>
             <Select
               value={targetRole}
               onValueChange={(val) => setTargetRole(val as typeof targetRole)}

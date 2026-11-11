@@ -37,10 +37,7 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      <NotificationList
-        initialNotifications={notifications}
-        unreadCount={unreadCount}
-      />
+      <NotificationList initialNotifications={notifications} unreadCount={unreadCount} />
     </Container>
   );
 }

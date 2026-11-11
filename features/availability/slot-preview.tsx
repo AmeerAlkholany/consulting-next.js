@@ -62,7 +62,8 @@ export function SlotPreview({ timezone, days }: SlotPreviewProps) {
             <Clock className="h-8 w-8 text-muted-foreground mb-2" />
             <p className="text-sm font-medium">No bookable slots found</p>
             <p className="text-xs text-muted-foreground max-w-sm mt-1">
-              Add active weekly availability rules or extra date hours. Verify that your rules don&apos;t fall entirely within your minimum lead time.
+              Add active weekly availability rules or extra date hours. Verify that your rules
+              don&apos;t fall entirely within your minimum lead time.
             </p>
           </div>
         ) : (
@@ -97,4 +98,3 @@ export function SlotPreview({ timezone, days }: SlotPreviewProps) {
     </Card>
   );
 }
-

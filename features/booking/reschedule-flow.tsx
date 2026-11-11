@@ -57,7 +57,9 @@ export function RescheduleFlow({
         const to = toDate.toISOString().split("T")[0];
 
         const params = new URLSearchParams({ from, to, tz: viewerTimezone });
-        const res = await fetch(`/api/consultants/${consultantSlug}/availability?${params.toString()}`);
+        const res = await fetch(
+          `/api/consultants/${consultantSlug}/availability?${params.toString()}`,
+        );
         if (!res.ok) {
           setFetchError("Unable to load available slots for rescheduling.");
           return;
@@ -120,7 +122,8 @@ export function RescheduleFlow({
           Reschedule Appointment
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Select a new time slot with {consultantName}. Your previous slot will be released upon confirmation.
+          Select a new time slot with {consultantName}. Your previous slot will be released upon
+          confirmation.
         </p>
       </div>
 
@@ -237,4 +240,3 @@ export function RescheduleFlow({
     </div>
   );
 }
-

@@ -39,7 +39,8 @@ export default async function AdminAppointmentsPage({ searchParams }: PageProps)
             Appointment Oversight
           </h1>
           <p className="text-sm text-muted-foreground">
-            {total} appointment{total === 1 ? "" : "s"} across the platform (metadata-only projection, zero clinical note exposure)
+            {total} appointment{total === 1 ? "" : "s"} across the platform (metadata-only
+            projection, zero clinical note exposure)
           </p>
         </div>
 
@@ -81,4 +82,3 @@ export default async function AdminAppointmentsPage({ searchParams }: PageProps)
     </Container>
   );
 }
-

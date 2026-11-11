@@ -133,7 +133,9 @@ export function RuleEditor({ initialRule, trigger, onSuccess }: RuleEditorProps)
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Availability Rule" : "Add Weekly Availability Rule"}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Edit Availability Rule" : "Add Weekly Availability Rule"}
+          </DialogTitle>
           <DialogDescription>
             Define recurring hours when you are available for client consultations.
           </DialogDescription>
@@ -233,4 +235,3 @@ export function RuleEditor({ initialRule, trigger, onSuccess }: RuleEditorProps)
     </Dialog>
   );
 }
-

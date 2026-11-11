@@ -43,11 +43,7 @@ export default async function ConsultantAppointmentDetailPage({ params }: PagePr
 
   return (
     <Container className="py-8">
-      <ConsultantAppointmentDetail
-        appointment={appointment}
-        notes={serializedNotes}
-      />
+      <ConsultantAppointmentDetail appointment={appointment} notes={serializedNotes} />
     </Container>
   );
 }
-

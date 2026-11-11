@@ -64,4 +64,3 @@ export function AppointmentList({ appointments, tab, viewerTimezone }: Appointme
     </div>
   );
 }
-

@@ -26,4 +26,3 @@ export function generateCspHeader(nonce: string): string {
 
   return directives.join("; ");
 }
-

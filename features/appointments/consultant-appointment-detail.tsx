@@ -129,11 +129,7 @@ export function ConsultantAppointmentDetail({
             </div>
             <div className="flex flex-wrap gap-2">
               {canConfirm && (
-                <Button
-                  onClick={handleConfirm}
-                  disabled={isPending}
-                  className="gap-1.5"
-                >
+                <Button onClick={handleConfirm} disabled={isPending} className="gap-1.5">
                   <CheckCircle2 className="h-4 w-4" />
                   {isPending ? "Confirming..." : "Confirm Booking"}
                 </Button>
@@ -150,11 +146,7 @@ export function ConsultantAppointmentDetail({
                 </Button>
               )}
               {canComplete && (
-                <Button
-                  onClick={handleComplete}
-                  disabled={isPending}
-                  className="gap-1.5"
-                >
+                <Button onClick={handleComplete} disabled={isPending} className="gap-1.5">
                   <UserCheck className="h-4 w-4" />
                   {isPending ? "Updating..." : "Mark Completed"}
                 </Button>
@@ -231,18 +223,15 @@ export function ConsultantAppointmentDetail({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-xs text-muted-foreground">Date & Time</span>
-                  <p className="text-sm font-medium">
-                    {format(startsAt, "EEEE, MMMM d, yyyy")}
-                  </p>
+                  <p className="text-sm font-medium">{format(startsAt, "EEEE, MMMM d, yyyy")}</p>
                   <p className="text-xs text-muted-foreground">
-                    {format(startsAt, "h:mm a")} – {format(endsAt, "h:mm a")} ({appointment.consultantTimezone})
+                    {format(startsAt, "h:mm a")} – {format(endsAt, "h:mm a")} (
+                    {appointment.consultantTimezone})
                   </p>
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground">Client Local Time</span>
-                  <p className="text-sm font-medium">
-                    {appointment.clientTimezone}
-                  </p>
+                  <p className="text-sm font-medium">{appointment.clientTimezone}</p>
                   <p className="text-xs text-muted-foreground">
                     Duration: {appointment.sessionDurationMinutes} minutes
                   </p>
@@ -250,7 +239,9 @@ export function ConsultantAppointmentDetail({
                 <div>
                   <span className="text-xs text-muted-foreground">Session Type</span>
                   <p className="text-sm font-medium">
-                    {appointment.consultationType === "ONLINE" ? "Online Video Session" : "In-Person"}
+                    {appointment.consultationType === "ONLINE"
+                      ? "Online Video Session"
+                      : "In-Person"}
                   </p>
                 </div>
                 <div>
@@ -286,10 +277,7 @@ export function ConsultantAppointmentDetail({
           </Card>
 
           {/* Session Notes Editor */}
-          <SessionNotesEditor
-            appointmentId={appointment.id}
-            initialNotes={notes}
-          />
+          <SessionNotesEditor appointmentId={appointment.id} initialNotes={notes} />
         </div>
 
         <div>

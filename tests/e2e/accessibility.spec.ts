@@ -28,7 +28,11 @@ test.describe("WCAG 2.2 AA Automated Accessibility Checks (Step 20)", () => {
       expect(
         seriousOrCritical,
         `Expected 0 critical/serious a11y violations on ${route.path}, found:\n${JSON.stringify(
-          seriousOrCritical.map((v) => ({ id: v.id, impact: v.impact, description: v.description })),
+          seriousOrCritical.map((v) => ({
+            id: v.id,
+            impact: v.impact,
+            description: v.description,
+          })),
           null,
           2,
         )}`,
@@ -47,4 +51,3 @@ test.describe("WCAG 2.2 AA Automated Accessibility Checks (Step 20)", () => {
     expect(activeHref).toBe("#main-content");
   });
 });
-

@@ -16,6 +16,7 @@ This guide describes how to deploy, configure, and maintain the psychological co
 ## 2. Environment Variables & Secret Configuration
 
 Copy `.env.example` to `.env.production` and populate values:
+
 - `DATABASE_URL`: Connection string with pooling.
 - `DIRECT_URL`: Direct non-pooled connection for migrations (`prisma migrate deploy`).
 - `SESSION_SECRET`: 64-character high-entropy secret for opaque token HMAC signing.
@@ -28,6 +29,7 @@ Copy `.env.example` to `.env.production` and populate values:
 ## 3. Database Migration Pipeline
 
 Before starting the application, run:
+
 ```bash
 # Apply pending migrations using privileged migration credentials
 pnpm prisma migrate deploy
@@ -54,8 +56,10 @@ docker run -d \
 ## 5. Health Checks & Monitoring
 
 The platform exposes an automated health probe at:
+
 ```http
 GET /api/health
 ```
+
 - Returns `200 OK` with latency details when healthy.
 - Returns `503 Service Unavailable` if database connectivity is lost.

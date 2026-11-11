@@ -117,7 +117,9 @@ export default async function ConsultantDashboardPage() {
           <CardContent className="flex flex-col gap-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Verification:</span>
-              <span className="font-medium capitalize">{profile.verificationStatus.toLowerCase()}</span>
+              <span className="font-medium capitalize">
+                {profile.verificationStatus.toLowerCase()}
+              </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Accepting Bookings:</span>
@@ -135,7 +137,8 @@ export default async function ConsultantDashboardPage() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Rate:</span>
               <span className="font-medium">
-                {profile.sessionPriceMinor / 100} {profile.currency} / {profile.sessionDurationMinutes}min
+                {profile.sessionPriceMinor / 100} {profile.currency} /{" "}
+                {profile.sessionDurationMinutes}min
               </span>
             </div>
           </CardContent>

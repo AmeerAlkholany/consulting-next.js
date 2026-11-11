@@ -1,10 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { cleanDatabase, disconnectDatabase, prisma } from "@/tests/helpers/db";
-import {
-  createReview,
-  updateReview,
-  unpublishReview,
-} from "@/server/services/reviews";
+import { createReview, updateReview, unpublishReview } from "@/server/services/reviews";
 import {
   getPublicReviewsForConsultant,
   getConsultantReviews,
@@ -143,7 +139,8 @@ describe("Reviews & Ratings Integration Tests", () => {
 
   describe("Appointment Review Eligibility & Constraints (BR-9)", () => {
     it("rejects review creation for appointments that are not COMPLETED", async () => {
-      const { consultantProfile, clientProfile, clientSessionUser } = await setupConsultantAndClient();
+      const { consultantProfile, clientProfile, clientSessionUser } =
+        await setupConsultantAndClient();
 
       const pendingAppointment = await prisma.appointment.create({
         data: {
@@ -175,7 +172,8 @@ describe("Reviews & Ratings Integration Tests", () => {
     });
 
     it("rejects review creation when review window (> 30 days) has expired", async () => {
-      const { consultantProfile, clientProfile, clientSessionUser } = await setupConsultantAndClient();
+      const { consultantProfile, clientProfile, clientSessionUser } =
+        await setupConsultantAndClient();
 
       const expiredAppointment = await prisma.appointment.create({
         data: {
@@ -256,7 +254,7 @@ describe("Reviews & Ratings Integration Tests", () => {
           appointmentId: appointment.id,
           rating: 4,
           comment: "Intruder review",
-        })
+        }),
       ).rejects.toThrow("You do not have access to review this appointment.");
     });
   });
@@ -334,7 +332,8 @@ describe("Reviews & Ratings Integration Tests", () => {
     });
 
     it("prevents duplicate reviews on the same appointment (BR-9 / unique constraint)", async () => {
-      const { consultantProfile, clientProfile, clientSessionUser } = await setupConsultantAndClient();
+      const { consultantProfile, clientProfile, clientSessionUser } =
+        await setupConsultantAndClient();
 
       const appointment = await prisma.appointment.create({
         data: {
@@ -373,7 +372,8 @@ describe("Reviews & Ratings Integration Tests", () => {
     });
 
     it("maintains live database aggregate parity across multiple reviews", async () => {
-      const { consultantProfile, clientProfile, clientSessionUser } = await setupConsultantAndClient();
+      const { consultantProfile, clientProfile, clientSessionUser } =
+        await setupConsultantAndClient();
 
       const appt1 = await prisma.appointment.create({
         data: {
@@ -429,7 +429,8 @@ describe("Reviews & Ratings Integration Tests", () => {
 
   describe("48-Hour Review Editing Window", () => {
     it("allows editing rating and comment within 48 hours and adjusts ratingSum", async () => {
-      const { consultantProfile, clientProfile, clientSessionUser } = await setupConsultantAndClient();
+      const { consultantProfile, clientProfile, clientSessionUser } =
+        await setupConsultantAndClient();
 
       const appointment = await prisma.appointment.create({
         data: {
@@ -477,7 +478,8 @@ describe("Reviews & Ratings Integration Tests", () => {
     });
 
     it("rejects editing once the 48-hour edit window has expired", async () => {
-      const { consultantProfile, clientProfile, clientSessionUser } = await setupConsultantAndClient();
+      const { consultantProfile, clientProfile, clientSessionUser } =
+        await setupConsultantAndClient();
 
       const appointment = await prisma.appointment.create({
         data: {
@@ -522,7 +524,8 @@ describe("Reviews & Ratings Integration Tests", () => {
 
   describe("Admin Moderation & Unpublishing", () => {
     it("unpublishes a review, symmetrically decrements aggregates, and records an AuditLog", async () => {
-      const { consultantProfile, clientProfile, clientSessionUser } = await setupConsultantAndClient();
+      const { consultantProfile, clientProfile, clientSessionUser } =
+        await setupConsultantAndClient();
 
       const adminUser = await prisma.user.create({
         data: {
@@ -610,7 +613,8 @@ describe("Reviews & Ratings Integration Tests", () => {
     });
 
     it("refuses unpublishing by non-admin users", async () => {
-      const { consultantProfile, clientProfile, clientSessionUser } = await setupConsultantAndClient();
+      const { consultantProfile, clientProfile, clientSessionUser } =
+        await setupConsultantAndClient();
 
       const appointment = await prisma.appointment.create({
         data: {
@@ -638,14 +642,15 @@ describe("Reviews & Ratings Integration Tests", () => {
         unpublishReview(clientSessionUser, {
           reviewId,
           reason: "I want to delete it",
-        })
+        }),
       ).rejects.toThrow("Only administrators can moderate reviews.");
     });
   });
 
   describe("Public and Consultant DAL Queries", () => {
     it("returns anonymized names in public reviews and excludes unpublished reviews", async () => {
-      const { consultantProfile, clientProfile, clientSessionUser } = await setupConsultantAndClient();
+      const { consultantProfile, clientProfile, clientSessionUser } =
+        await setupConsultantAndClient();
 
       const adminUser = await prisma.user.create({
         data: {
@@ -700,8 +705,16 @@ describe("Reviews & Ratings Integration Tests", () => {
         },
       });
 
-      const r1 = await createReview(clientSessionUser, { appointmentId: appt1.id, rating: 5, comment: "Public review" });
-      const r2 = await createReview(clientSessionUser, { appointmentId: appt2.id, rating: 2, comment: "Moderated review" });
+      const r1 = await createReview(clientSessionUser, {
+        appointmentId: appt1.id,
+        rating: 5,
+        comment: "Public review",
+      });
+      const r2 = await createReview(clientSessionUser, {
+        appointmentId: appt2.id,
+        rating: 2,
+        comment: "Moderated review",
+      });
 
       // Unpublish r2
       await unpublishReview(adminSessionUser, {
@@ -713,7 +726,9 @@ describe("Reviews & Ratings Integration Tests", () => {
       expect(publicReviews.reviews.length).toBe(1);
       expect(publicReviews.reviews[0].id).toBe((r1 as { reviewId: string }).reviewId);
       expect(publicReviews.reviews[0].authorName).toBe("Jane D.");
-      expect((publicReviews.reviews[0] as unknown as Record<string, unknown>).email).toBeUndefined();
+      expect(
+        (publicReviews.reviews[0] as unknown as Record<string, unknown>).email,
+      ).toBeUndefined();
 
       // Consultant view includes unpublished with badge
       const consultantView = await getConsultantReviews(consultantProfile.id);

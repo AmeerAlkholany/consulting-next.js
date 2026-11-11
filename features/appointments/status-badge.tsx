@@ -47,4 +47,3 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       return <Badge variant="outline">{status}</Badge>;
   }
 }
-

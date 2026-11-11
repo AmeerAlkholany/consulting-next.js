@@ -18,7 +18,8 @@ export function PolicyNotice({
           <div>
             <span className="font-medium text-foreground">Cancellation Policy: </span>
             <span className="text-muted-foreground">
-              You can cancel or reschedule freely up to {cancellationWindowHours} hours before the session starts.
+              You can cancel or reschedule freely up to {cancellationWindowHours} hours before the
+              session starts.
             </span>
           </div>
         </div>
@@ -29,7 +30,8 @@ export function PolicyNotice({
             {autoConfirm ? (
               <span>
                 <strong className="text-foreground">Instant Confirmation: </strong>
-                This consultant accepts bookings automatically. Your session will be confirmed immediately.
+                This consultant accepts bookings automatically. Your session will be confirmed
+                immediately.
               </span>
             ) : (
               <span>
@@ -43,4 +45,3 @@ export function PolicyNotice({
     </Card>
   );
 }
-

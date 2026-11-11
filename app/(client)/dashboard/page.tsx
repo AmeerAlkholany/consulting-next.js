@@ -3,10 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { requireClient } from "@/server/authz/guards";
 import { getClientProfile } from "@/server/dal/client-profile";
-import {
-  getNextClientAppointment,
-  getClientAppointmentsByTab,
-} from "@/server/dal/appointment";
+import { getNextClientAppointment, getClientAppointmentsByTab } from "@/server/dal/appointment";
 import { getClientReviewableAppointments } from "@/server/dal/review";
 import { Container } from "@/components/layout/container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,14 +29,15 @@ export default async function ClientDashboardPage() {
   const now = new Date();
 
   // Load next appointment and counts in parallel
-  const [nextAppointment, upcomingData, pastData, pendingData, reviewableAppointments] = await Promise.all([
-    getNextClientAppointment(profile.id, now),
-    getClientAppointmentsByTab(profile.id, "upcoming", { limit: 1, now }),
-    getClientAppointmentsByTab(profile.id, "past", { limit: 1, now }),
-    // Pending requests specifically
-    getClientAppointmentsByTab(profile.id, "upcoming", { limit: 50, now }),
-    getClientReviewableAppointments(profile.id, now),
-  ]);
+  const [nextAppointment, upcomingData, pastData, pendingData, reviewableAppointments] =
+    await Promise.all([
+      getNextClientAppointment(profile.id, now),
+      getClientAppointmentsByTab(profile.id, "upcoming", { limit: 1, now }),
+      getClientAppointmentsByTab(profile.id, "past", { limit: 1, now }),
+      // Pending requests specifically
+      getClientAppointmentsByTab(profile.id, "upcoming", { limit: 50, now }),
+      getClientReviewableAppointments(profile.id, now),
+    ]);
 
   const pendingCount = pendingData.appointments.filter((a) => a.status === "PENDING").length;
 

@@ -3,18 +3,14 @@ import { siteConfig } from "@/config/site";
 import { db } from "@/db/client";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const routes = [
-    "",
-    "/consultants",
-    "/crisis-resources",
-    "/legal/privacy",
-    "/legal/terms",
-  ].map((route) => ({
-    url: `${siteConfig.url}${route}`,
-    lastModified: new Date(),
-    changeFrequency: "daily" as const,
-    priority: route === "" ? 1 : 0.8,
-  }));
+  const routes = ["", "/consultants", "/crisis-resources", "/legal/privacy", "/legal/terms"].map(
+    (route) => ({
+      url: `${siteConfig.url}${route}`,
+      lastModified: new Date(),
+      changeFrequency: "daily" as const,
+      priority: route === "" ? 1 : 0.8,
+    }),
+  );
 
   try {
     const consultants = await db.consultantProfile.findMany({

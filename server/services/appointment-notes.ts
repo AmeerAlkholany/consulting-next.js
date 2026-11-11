@@ -125,7 +125,10 @@ export async function upsertAppointmentNote(
       },
     });
 
-    logger.info({ noteId: updated.id, appointmentId: input.appointmentId }, "Updated appointment note");
+    logger.info(
+      { noteId: updated.id, appointmentId: input.appointmentId },
+      "Updated appointment note",
+    );
 
     return {
       id: updated.id,
@@ -147,7 +150,10 @@ export async function upsertAppointmentNote(
     },
   });
 
-  logger.info({ noteId: created.id, appointmentId: input.appointmentId }, "Created appointment note");
+  logger.info(
+    { noteId: created.id, appointmentId: input.appointmentId },
+    "Created appointment note",
+  );
 
   return {
     id: created.id,
@@ -193,4 +199,3 @@ export async function deleteAppointmentNote(
 
   return { success: true };
 }
-

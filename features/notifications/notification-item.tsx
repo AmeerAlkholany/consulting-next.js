@@ -80,15 +80,11 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
         isUnread ? "bg-muted/30 font-medium" : "bg-card hover:bg-muted/10"
       }`}
     >
-      <div className="mt-0.5 shrink-0 rounded-full bg-background p-2 border">
-        {getIcon()}
-      </div>
+      <div className="mt-0.5 shrink-0 rounded-full bg-background p-2 border">{getIcon()}</div>
 
       <div className="flex-1 space-y-1">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-foreground">
-            {notification.payload.title}
-          </p>
+          <p className="text-sm font-semibold text-foreground">{notification.payload.title}</p>
           <span className="text-xs text-muted-foreground shrink-0">
             {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
           </span>
@@ -112,9 +108,7 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
             <Check className="h-4 w-4" />
           </Button>
         )}
-        {destinationLink && (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        )}
+        {destinationLink && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
       </div>
     </div>
   );

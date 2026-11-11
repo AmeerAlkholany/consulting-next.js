@@ -40,19 +40,11 @@ export function RatingDisplay({
           const half = !filled && avg >= starIndex - 0.5;
 
           if (filled) {
-            return (
-              <Star
-                key={starIndex}
-                className={cn(starSizeClasses[size], "fill-current")}
-              />
-            );
+            return <Star key={starIndex} className={cn(starSizeClasses[size], "fill-current")} />;
           }
           if (half) {
             return (
-              <StarHalf
-                key={starIndex}
-                className={cn(starSizeClasses[size], "fill-current")}
-              />
+              <StarHalf key={starIndex} className={cn(starSizeClasses[size], "fill-current")} />
             );
           }
           return (

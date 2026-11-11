@@ -65,9 +65,7 @@ export function getAppointmentCompletedTemplate(data: {
   };
 }
 
-export function getConsultantApprovedTemplate(data: {
-  consultantName: string;
-}): EmailTemplateData {
+export function getConsultantApprovedTemplate(data: { consultantName: string }): EmailTemplateData {
   return {
     subject: "Your consultant profile has been approved!",
     headline: "Welcome to our practice platform",

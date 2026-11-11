@@ -31,7 +31,9 @@ describe("Security Hardening Integration Tests (Step 19)", () => {
     it("produces complete security headers including HSTS, nosniff, and frame denial", () => {
       const headers = getSecurityHeaders({ nonce: "sample-nonce", isPrivate: true });
 
-      expect(headers["Strict-Transport-Security"]).toBe("max-age=63072000; includeSubDomains; preload");
+      expect(headers["Strict-Transport-Security"]).toBe(
+        "max-age=63072000; includeSubDomains; preload",
+      );
       expect(headers["X-Content-Type-Options"]).toBe("nosniff");
       expect(headers["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
       expect(headers["Permissions-Policy"]).toContain("camera=()");

@@ -73,4 +73,3 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
     </div>
   );
 }
-

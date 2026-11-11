@@ -8,16 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StatusChangeDialog } from "./status-change-dialog";
 import { RoleChangeDialog } from "./role-change-dialog";
-import {
-  ArrowLeft,
-  User,
-  Mail,
-  Calendar,
-  Globe,
-  Key,
-  History,
-  Briefcase,
-} from "lucide-react";
+import { ArrowLeft, User, Mail, Calendar, Globe, Key, History, Briefcase } from "lucide-react";
 import type { AdminUserDetailRow } from "@/server/dal/admin";
 
 interface UserDetailProps {
@@ -38,11 +29,7 @@ export function UserDetail({ user }: UserDetailProps) {
           </Link>
         </Button>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowRoleDialog(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setShowRoleDialog(true)}>
             Change Role
           </Button>
           <Button

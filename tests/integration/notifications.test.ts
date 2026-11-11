@@ -365,8 +365,16 @@ describe("Notifications integration tests", () => {
     it("marks all notifications as read in bulk", async () => {
       await prisma.notification.createMany({
         data: [
-          { userId: clientUser.id, type: "APPOINTMENT_CONFIRMED", payload: { title: "1", message: "1" } },
-          { userId: clientUser.id, type: "APPOINTMENT_COMPLETED", payload: { title: "2", message: "2" } },
+          {
+            userId: clientUser.id,
+            type: "APPOINTMENT_CONFIRMED",
+            payload: { title: "1", message: "1" },
+          },
+          {
+            userId: clientUser.id,
+            type: "APPOINTMENT_COMPLETED",
+            payload: { title: "2", message: "2" },
+          },
         ],
       });
 

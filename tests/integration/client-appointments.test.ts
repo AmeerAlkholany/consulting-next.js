@@ -297,4 +297,3 @@ describe("Client appointment workspace integration tests", () => {
     });
   });
 });
-

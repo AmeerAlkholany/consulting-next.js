@@ -1,1 +1,3 @@
-export default function ConsultantSlugPage(){return null;}
+export default function ConsultantSlugPage() {
+  return null;
+}

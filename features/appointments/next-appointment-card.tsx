@@ -75,7 +75,8 @@ export function NextAppointmentCard({ appointment, viewerTimezone }: NextAppoint
           <div className="flex items-center gap-2.5">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span>
-              {formattedTime} <span className="text-xs text-muted-foreground">({viewerTimezone})</span>
+              {formattedTime}{" "}
+              <span className="text-xs text-muted-foreground">({viewerTimezone})</span>
             </span>
           </div>
           <div className="flex items-center gap-2.5">
@@ -112,4 +113,3 @@ export function NextAppointmentCard({ appointment, viewerTimezone }: NextAppoint
     </Card>
   );
 }
-

@@ -75,14 +75,14 @@ export function StatusChangeDialog({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">
-            {error}
-          </div>
+          <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">{error}</div>
         )}
 
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <label htmlFor="target-status" className="text-sm font-medium">New Status</label>
+            <label htmlFor="target-status" className="text-sm font-medium">
+              New Status
+            </label>
             <Select
               value={targetStatus}
               onValueChange={(val) => setTargetStatus(val as typeof targetStatus)}
@@ -130,4 +130,3 @@ export function StatusChangeDialog({
     </Dialog>
   );
 }
-

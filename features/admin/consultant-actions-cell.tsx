@@ -71,7 +71,11 @@ export function ConsultantActionsCell({
               handleAction(rejectConsultantAction, "reject", `Rejected ${consultantName}`)
             }
             trigger={
-              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/90">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive/90"
+              >
                 Reject
               </Button>
             }
@@ -89,7 +93,11 @@ export function ConsultantActionsCell({
             handleAction(suspendConsultantAction, "suspend", `Suspended ${consultantName}`)
           }
           trigger={
-            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/90">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive/90"
+            >
               Suspend
             </Button>
           }

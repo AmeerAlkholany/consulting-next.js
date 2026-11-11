@@ -53,4 +53,3 @@ export function AppointmentTabs({ currentTab, counts }: AppointmentTabsProps) {
     </div>
   );
 }
-

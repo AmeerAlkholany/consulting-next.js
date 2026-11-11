@@ -3,10 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { requireClient } from "@/server/authz/guards";
 import { getClientProfile } from "@/server/dal/client-profile";
-import {
-  getClientAppointmentsByTab,
-  type AppointmentTab,
-} from "@/server/dal/appointment";
+import { getClientAppointmentsByTab, type AppointmentTab } from "@/server/dal/appointment";
 import { Container } from "@/components/layout/container";
 import { Button } from "@/components/ui/button";
 import { AppointmentTabs } from "@/features/appointments/appointment-tabs";

@@ -53,7 +53,9 @@ export function ClientSummaryCard({
               </div>
             )}
             {!email && !phoneNumber && (
-              <p className="text-xs text-muted-foreground">No additional contact info registered.</p>
+              <p className="text-xs text-muted-foreground">
+                No additional contact info registered.
+              </p>
             )}
           </div>
         ) : (
@@ -68,4 +70,3 @@ export function ClientSummaryCard({
     </Card>
   );
 }
-

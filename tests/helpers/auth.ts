@@ -19,10 +19,7 @@ export async function createAuthenticatedTestSession(user: User): Promise<{
   cookieHeader: string;
 }> {
   const sessionUser = userToSessionUser(user);
-  const issued = await createSession(
-    user.id,
-    { ipHash: "test-hash", userAgent: "vitest-agent" },
-  );
+  const issued = await createSession(user.id, { ipHash: "test-hash", userAgent: "vitest-agent" });
 
   return {
     sessionUser,

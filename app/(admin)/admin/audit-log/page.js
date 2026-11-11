@@ -1,1 +1,3 @@
-export default function AuditLogPage(){return null;}
+export default function AuditLogPage() {
+  return null;
+}

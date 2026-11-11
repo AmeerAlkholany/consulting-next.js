@@ -3,16 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { requireAdmin } from "@/server/authz/guards";
-import {
-  setUserStatus,
-  changeUserRole,
-  adminCancelAppointment,
-} from "@/server/services/admin";
-import {
-  userStatusSchema,
-  roleChangeSchema,
-  adminCancelAppointmentSchema,
-} from "@/schemas/admin";
+import { setUserStatus, changeUserRole, adminCancelAppointment } from "@/server/services/admin";
+import { userStatusSchema, roleChangeSchema, adminCancelAppointmentSchema } from "@/schemas/admin";
 
 export interface ActionResult {
   success: boolean;
@@ -37,7 +29,9 @@ export async function setUserStatusAction(
 
   const h = await headers();
   const forwardedFor = h.get("x-forwarded-for");
-  const ipHash = forwardedFor ? Buffer.from(forwardedFor).toString("base64").slice(0, 32) : undefined;
+  const ipHash = forwardedFor
+    ? Buffer.from(forwardedFor).toString("base64").slice(0, 32)
+    : undefined;
 
   try {
     const res = await setUserStatus({ actor, ipHash }, parsed.data);
@@ -70,7 +64,9 @@ export async function changeUserRoleAction(
 
   const h = await headers();
   const forwardedFor = h.get("x-forwarded-for");
-  const ipHash = forwardedFor ? Buffer.from(forwardedFor).toString("base64").slice(0, 32) : undefined;
+  const ipHash = forwardedFor
+    ? Buffer.from(forwardedFor).toString("base64").slice(0, 32)
+    : undefined;
 
   try {
     const res = await changeUserRole({ actor, ipHash }, parsed.data);
@@ -102,7 +98,9 @@ export async function adminCancelAppointmentAction(
 
   const h = await headers();
   const forwardedFor = h.get("x-forwarded-for");
-  const ipHash = forwardedFor ? Buffer.from(forwardedFor).toString("base64").slice(0, 32) : undefined;
+  const ipHash = forwardedFor
+    ? Buffer.from(forwardedFor).toString("base64").slice(0, 32)
+    : undefined;
 
   try {
     const res = await adminCancelAppointment({ actor, ipHash }, parsed.data);
@@ -116,4 +114,3 @@ export async function adminCancelAppointmentAction(
     };
   }
 }
-

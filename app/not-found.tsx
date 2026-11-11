@@ -10,7 +10,8 @@ export default function NotFound() {
         <p className="text-sm font-semibold tracking-wider text-primary uppercase">404 Error</p>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Page not found</h1>
         <p className="max-w-md text-muted-foreground">
-          Sorry, we couldn&apos;t find the page you&apos;re looking for. It may have been moved, expired, or deleted.
+          Sorry, we couldn&apos;t find the page you&apos;re looking for. It may have been moved,
+          expired, or deleted.
         </p>
       </div>
       <div className="flex gap-4">

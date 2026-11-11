@@ -42,9 +42,11 @@ export function NoteField({ value, onChange, disabled }: NoteFieldProps) {
 
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Lock className="h-3.5 w-3.5 flex-shrink-0" />
-        <span>Private &amp; Confidential: Visible only to your consultant. Never shown to administrators.</span>
+        <span>
+          Private &amp; Confidential: Visible only to your consultant. Never shown to
+          administrators.
+        </span>
       </div>
     </div>
   );
 }
-

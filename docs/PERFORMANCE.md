@@ -6,12 +6,12 @@ This document records the baseline and optimized benchmarks across the platform'
 
 ## 1. Hot Path Query Execution Times
 
-| Benchmark / Operation | Target Budget (p95) | Measured Execution Time | Status |
-|---|---|---|---|
-| **Discovery Search & Filter** | < 300 ms | **18.4 ms** | PASS (Exceeds target by 16x) |
-| **Slot Engine Generation (14-day)** | < 150 ms | **1.2 ms** | PASS (Pure deterministic in-memory calculation) |
-| **Client Dashboard Appointment Batch** | < 100 ms | **8.1 ms** | PASS (Keyset/paged queries with bounded limit) |
-| **Consultant Schedule Retrieval** | < 100 ms | **9.6 ms** | PASS (Indexed on `consultantProfileId` + `startsAt`) |
+| Benchmark / Operation                  | Target Budget (p95) | Measured Execution Time | Status                                               |
+| -------------------------------------- | ------------------- | ----------------------- | ---------------------------------------------------- |
+| **Discovery Search & Filter**          | < 300 ms            | **18.4 ms**             | PASS (Exceeds target by 16x)                         |
+| **Slot Engine Generation (14-day)**    | < 150 ms            | **1.2 ms**              | PASS (Pure deterministic in-memory calculation)      |
+| **Client Dashboard Appointment Batch** | < 100 ms            | **8.1 ms**              | PASS (Keyset/paged queries with bounded limit)       |
+| **Consultant Schedule Retrieval**      | < 100 ms            | **9.6 ms**              | PASS (Indexed on `consultantProfileId` + `startsAt`) |
 
 ---
 
@@ -32,4 +32,3 @@ This document records the baseline and optimized benchmarks across the platform'
 - **Image Formats:** Enforced next-gen formats (`image/avif`, `image/webp`).
 - **Cumulative Layout Shift (CLS = 0):** Every async route renders dedicated layout-mirroring skeletons (`PageHeaderSkeleton`, `CardListSkeleton`, `TableSkeleton`) avoiding shift upon data resolution.
 - **First Contentful Paint (FCP):** Critical CSS and design tokens loaded directly in [app/globals.css](file:///c:/Users/Ameer%20Al.kholany/Desktop/consulting-next.js/app/globals.css) using CSS variable design tokens.
-

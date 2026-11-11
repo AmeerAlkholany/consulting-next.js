@@ -42,4 +42,3 @@ test.describe("Critical Flows E2E Spec Matrix (ARCHITECTURE §25)", () => {
     await expect(page.getByLabel(/password/i)).toBeVisible();
   });
 });
-

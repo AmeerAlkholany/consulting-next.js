@@ -47,8 +47,8 @@ export function ReviewForm({
           {isEdit ? "Review updated!" : "Thank you for your feedback!"}
         </h3>
         <p className="text-sm text-muted-foreground max-w-md">
-          Your review has been successfully submitted. It helps other clients discover great consultants
-          while keeping your identity private.
+          Your review has been successfully submitted. It helps other clients discover great
+          consultants while keeping your identity private.
         </p>
         <div className="flex gap-3 pt-2">
           <Button
@@ -63,10 +63,7 @@ export function ReviewForm({
           >
             Back to Appointment
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/consultants")}
-          >
+          <Button variant="outline" onClick={() => router.push("/consultants")}>
             Browse Consultants
           </Button>
         </div>
@@ -126,8 +123,9 @@ export function ReviewForm({
           </span>
         </div>
         <p className="text-xs text-muted-foreground">
-          Your feedback will appear publicly as <strong>First Name + Last Initial</strong> (e.g. Jane D.).
-          Never include private health information or clinical diagnoses in public reviews.
+          Your feedback will appear publicly as <strong>First Name + Last Initial</strong> (e.g.
+          Jane D.). Never include private health information or clinical diagnoses in public
+          reviews.
         </p>
         <Textarea
           id="comment"
@@ -146,12 +144,7 @@ export function ReviewForm({
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-2">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isPending}
-          onClick={() => router.back()}
-        >
+        <Button type="button" variant="outline" disabled={isPending} onClick={() => router.back()}>
           Cancel
         </Button>
         <Button type="submit" disabled={isPending || comment.length > 2000}>

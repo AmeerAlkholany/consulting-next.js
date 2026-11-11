@@ -47,7 +47,9 @@ export function verifyCronSecret(request: Request): boolean {
  * Default grace period: 2 hours (BOOKING_POLICY.completionGracePeriodHours).
  * Atomically transitions status to COMPLETED and emits notification + review invitation.
  */
-export async function completePastAppointments(now: Date = new Date()): Promise<{ updated: number }> {
+export async function completePastAppointments(
+  now: Date = new Date(),
+): Promise<{ updated: number }> {
   const gracePeriodMs = BOOKING_POLICY.completionGracePeriodHours * 60 * 60 * 1000;
   const cutoff = new Date(now.getTime() - gracePeriodMs);
 
@@ -115,7 +117,7 @@ export async function completePastAppointments(now: Date = new Date()): Promise<
             data: emailTemplate,
           },
         },
-        tx
+        tx,
       );
 
       updatedCount++;
@@ -131,7 +133,9 @@ export async function completePastAppointments(now: Date = new Date()): Promise<
  * Sweeps for upcoming confirmed appointments and sends 24-hour and 1-hour reminders.
  * Idempotent: uses remindersSentAt timestamp array on Appointment.
  */
-export async function sendAppointmentReminders(now: Date = new Date()): Promise<{ queued: number }> {
+export async function sendAppointmentReminders(
+  now: Date = new Date(),
+): Promise<{ queued: number }> {
   const nowMs = now.getTime();
 
   // Window definitions
@@ -186,7 +190,7 @@ export async function sendAppointmentReminders(now: Date = new Date()): Promise<
     // 1h reminder check: already sent if any timestamp recorded within the past 2h
     const thresholdMs = is24h ? 12 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000;
     const alreadySent = appt.remindersSentAt.some(
-      (sentTime) => nowMs - sentTime.getTime() < thresholdMs
+      (sentTime) => nowMs - sentTime.getTime() < thresholdMs,
     );
 
     if (alreadySent) {
@@ -233,7 +237,7 @@ export async function sendAppointmentReminders(now: Date = new Date()): Promise<
             data: clientEmailData,
           },
         },
-        tx
+        tx,
       );
 
       // 2. Consultant reminder
@@ -261,13 +265,16 @@ export async function sendAppointmentReminders(now: Date = new Date()): Promise<
             data: consultantEmailData,
           },
         },
-        tx
+        tx,
       );
 
       queuedCount++;
     });
 
-    logger.info({ appointmentId: appt.id, timeframe: timeframeText }, "reminders queued for appointment");
+    logger.info(
+      { appointmentId: appt.id, timeframe: timeframeText },
+      "reminders queued for appointment",
+    );
   }
 
   return { queued: queuedCount };
@@ -376,7 +383,10 @@ export async function drainOutbox(options?: {
     }
   }
 
-  logger.info({ processed: pendingRows.length, sent: sentCount, failed: failedCount }, "outbox drain run completed");
+  logger.info(
+    { processed: pendingRows.length, sent: sentCount, failed: failedCount },
+    "outbox drain run completed",
+  );
 
   return {
     processed: pendingRows.length,
@@ -480,7 +490,7 @@ export async function pruneSystem(now: Date = new Date()): Promise<{
             data: clientEmail,
           },
         },
-        tx
+        tx,
       );
 
       // Notify consultant
@@ -507,13 +517,16 @@ export async function pruneSystem(now: Date = new Date()): Promise<{
             data: consultantEmail,
           },
         },
-        tx
+        tx,
       );
 
       cancelledCount++;
     });
 
-    logger.info({ appointmentId: appt.id }, "stale pending appointment auto-cancelled by prune job");
+    logger.info(
+      { appointmentId: appt.id },
+      "stale pending appointment auto-cancelled by prune job",
+    );
   }
 
   return {

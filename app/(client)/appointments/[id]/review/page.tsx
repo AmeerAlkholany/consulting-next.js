@@ -192,16 +192,10 @@ export default async function AppointmentReviewPage({ params }: ReviewPageProps)
           </Link>
         </Button>
         <h1 className="text-2xl font-bold tracking-tight">Leave a Review</h1>
-        <p className="text-sm text-muted-foreground">
-          Consultation with {consultantName}
-        </p>
+        <p className="text-sm text-muted-foreground">Consultation with {consultantName}</p>
       </div>
 
-      <ReviewForm
-        appointmentId={appointment.id}
-        consultantName={consultantName}
-        isEdit={false}
-      />
+      <ReviewForm appointmentId={appointment.id} consultantName={consultantName} isEdit={false} />
     </Container>
   );
 }

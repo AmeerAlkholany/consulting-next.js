@@ -25,4 +25,3 @@ export class TestClock {
     this.current = typeof time === "string" ? new Date(time) : new Date(time);
   }
 }
-

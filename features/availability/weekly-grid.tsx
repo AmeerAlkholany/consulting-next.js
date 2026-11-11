@@ -24,15 +24,7 @@ interface WeeklyGridProps {
   rules: SerializedAvailabilityRule[];
 }
 
-const weekdayNames = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
+const weekdayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 function minutesToTime(minutes: number): string {
   const h = Math.floor(minutes / 60)
@@ -91,7 +83,8 @@ export function WeeklyGrid({ rules }: WeeklyGridProps) {
             <Calendar className="h-10 w-10 text-muted-foreground mb-3" />
             <p className="text-base font-medium">No weekly availability rules defined</p>
             <p className="text-sm text-muted-foreground max-w-sm mt-1 mb-4">
-              Click &quot;Add Rule&quot; to publish your working hours and let clients book sessions.
+              Click &quot;Add Rule&quot; to publish your working hours and let clients book
+              sessions.
             </p>
             <RuleEditor />
           </div>
@@ -189,4 +182,3 @@ export function WeeklyGrid({ rules }: WeeklyGridProps) {
     </Card>
   );
 }
-

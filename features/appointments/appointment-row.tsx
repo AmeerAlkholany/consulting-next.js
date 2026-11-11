@@ -89,4 +89,3 @@ export function AppointmentRow({ appointment, viewerTimezone }: AppointmentRowPr
     </Card>
   );
 }
-

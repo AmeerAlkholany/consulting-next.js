@@ -469,7 +469,8 @@ describe("Consultant appointment workspace integration tests", () => {
         },
       });
 
-      const sensitiveText = "Client presented with acute social anxiety symptoms. Recommended somatic exercises.";
+      const sensitiveText =
+        "Client presented with acute social anxiety symptoms. Recommended somatic exercises.";
 
       // Create note through service
       const createdNote = await upsertAppointmentNote(consultantAUser, {
@@ -545,4 +546,3 @@ describe("Consultant appointment workspace integration tests", () => {
     });
   });
 });
-

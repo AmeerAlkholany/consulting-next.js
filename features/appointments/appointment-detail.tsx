@@ -61,10 +61,8 @@ export function AppointmentDetail({ appointment, viewerTimezone }: AppointmentDe
       }).format(endsAt)}`
     : null;
 
-  const canReschedule =
-    appointment.status === "PENDING" || appointment.status === "CONFIRMED";
-  const canCancel =
-    appointment.status === "PENDING" || appointment.status === "CONFIRMED";
+  const canReschedule = appointment.status === "PENDING" || appointment.status === "CONFIRMED";
+  const canCancel = appointment.status === "PENDING" || appointment.status === "CONFIRMED";
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -101,7 +99,9 @@ export function AppointmentDetail({ appointment, viewerTimezone }: AppointmentDe
               <Calendar className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
               <div>
                 <span className="font-semibold text-foreground">{formattedDate}</span>
-                <p className="text-muted-foreground">{formattedViewerTime} ({viewerTimezone})</p>
+                <p className="text-muted-foreground">
+                  {formattedViewerTime} ({viewerTimezone})
+                </p>
                 {formattedConsultantTime && (
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Consultant time: {formattedConsultantTime} ({appointment.consultantTimezone})
@@ -118,9 +118,13 @@ export function AppointmentDetail({ appointment, viewerTimezone }: AppointmentDe
               )}
               <div>
                 <span className="font-semibold text-foreground">
-                  {appointment.consultationType === "ONLINE" ? "Online Consultation" : "In-person Consultation"}
+                  {appointment.consultationType === "ONLINE"
+                    ? "Online Consultation"
+                    : "In-person Consultation"}
                 </span>
-                <p className="text-muted-foreground">{appointment.sessionDurationMinutes} minutes duration</p>
+                <p className="text-muted-foreground">
+                  {appointment.sessionDurationMinutes} minutes duration
+                </p>
               </div>
             </div>
           </div>
@@ -161,21 +165,31 @@ export function AppointmentDetail({ appointment, viewerTimezone }: AppointmentDe
         </CardHeader>
         <CardContent className="text-xs text-muted-foreground space-y-1.5">
           <div>
-            Requested on: {new Date(appointment.createdAt).toLocaleString("en-US", { timeZone: viewerTimezone })}
+            Requested on:{" "}
+            {new Date(appointment.createdAt).toLocaleString("en-US", { timeZone: viewerTimezone })}
           </div>
           {appointment.confirmedAt && (
             <div>
-              Confirmed on: {new Date(appointment.confirmedAt).toLocaleString("en-US", { timeZone: viewerTimezone })}
+              Confirmed on:{" "}
+              {new Date(appointment.confirmedAt).toLocaleString("en-US", {
+                timeZone: viewerTimezone,
+              })}
             </div>
           )}
           {appointment.completedAt && (
             <div>
-              Completed on: {new Date(appointment.completedAt).toLocaleString("en-US", { timeZone: viewerTimezone })}
+              Completed on:{" "}
+              {new Date(appointment.completedAt).toLocaleString("en-US", {
+                timeZone: viewerTimezone,
+              })}
             </div>
           )}
           {appointment.cancelledAt && (
             <div className="text-destructive">
-              Cancelled on: {new Date(appointment.cancelledAt).toLocaleString("en-US", { timeZone: viewerTimezone })}
+              Cancelled on:{" "}
+              {new Date(appointment.cancelledAt).toLocaleString("en-US", {
+                timeZone: viewerTimezone,
+              })}
               {appointment.cancellationReason && (
                 <span className="block mt-0.5">Reason: {appointment.cancellationReason}</span>
               )}
@@ -233,4 +247,3 @@ export function AppointmentDetail({ appointment, viewerTimezone }: AppointmentDe
     </div>
   );
 }
-

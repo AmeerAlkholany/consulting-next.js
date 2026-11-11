@@ -432,7 +432,9 @@ export async function getAppointmentsForAdminOversight(filter: {
   if (filter.search) {
     where.OR = [
       { clientProfile: { displayName: { contains: filter.search, mode: "insensitive" } } },
-      { consultantProfile: { user: { fullName: { contains: filter.search, mode: "insensitive" } } } },
+      {
+        consultantProfile: { user: { fullName: { contains: filter.search, mode: "insensitive" } } },
+      },
     ];
   }
 

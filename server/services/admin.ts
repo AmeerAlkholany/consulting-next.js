@@ -182,7 +182,8 @@ async function updateVerificationStatus(
             type: "CONSULTANT_APPROVED",
             payload: {
               title: "Consultant Profile Approved",
-              message: "Your qualifications have been verified. You can now accept client bookings.",
+              message:
+                "Your qualifications have been verified. You can now accept client bookings.",
               consultantProfileId: profile.id,
               link: "/consultant/availability",
             },
@@ -312,7 +313,9 @@ export async function setUserStatus(
       where: { role: "ADMIN", status: "ACTIVE" },
     });
     if (activeAdminCount <= 1) {
-      throw new ValidationError("LAST_ADMIN: Cannot suspend or deactivate the last active administrator.");
+      throw new ValidationError(
+        "LAST_ADMIN: Cannot suspend or deactivate the last active administrator.",
+      );
     }
   }
 
@@ -406,7 +409,11 @@ export async function changeUserRole(
       });
     }
 
-    if (targetUser.role === "CONSULTANT" && input.role !== "CONSULTANT" && targetUser.consultantProfile) {
+    if (
+      targetUser.role === "CONSULTANT" &&
+      input.role !== "CONSULTANT" &&
+      targetUser.consultantProfile
+    ) {
       // Unpublish consultant profile
       await tx.consultantProfile.update({
         where: { id: targetUser.consultantProfile.id },
@@ -466,7 +473,9 @@ export async function adminCancelAppointment(
   }
 
   if (appointment.status === "CANCELLED" || appointment.status === "COMPLETED") {
-    throw new ValidationError(`INVALID_STATE: Cannot cancel an appointment in terminal state (${appointment.status}).`);
+    throw new ValidationError(
+      `INVALID_STATE: Cannot cancel an appointment in terminal state (${appointment.status}).`,
+    );
   }
 
   const updated = await db.$transaction(async (tx) => {

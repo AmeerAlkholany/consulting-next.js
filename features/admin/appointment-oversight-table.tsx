@@ -21,9 +21,7 @@ interface AppointmentOversightTableProps {
   appointments: AdminAppointmentOversightRow[];
 }
 
-export function AppointmentOversightTable({
-  appointments,
-}: AppointmentOversightTableProps) {
+export function AppointmentOversightTable({ appointments }: AppointmentOversightTableProps) {
   const [selectedAppointment, setSelectedAppointment] =
     useState<AdminAppointmentOversightRow | null>(null);
   const [reason, setReason] = useState("");
@@ -72,8 +70,7 @@ export function AppointmentOversightTable({
             ) : (
               appointments.map((apt) => {
                 const startsAt = new Date(apt.startsAt);
-                const isCancellable =
-                  apt.status !== "CANCELLED" && apt.status !== "COMPLETED";
+                const isCancellable = apt.status !== "CANCELLED" && apt.status !== "COMPLETED";
 
                 return (
                   <tr key={apt.id} className="border-b hover:bg-muted/30 transition-colors">

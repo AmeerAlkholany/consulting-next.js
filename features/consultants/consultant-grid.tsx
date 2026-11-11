@@ -372,7 +372,7 @@ export function ConsultantsClient({
                       <Star className="h-4 w-4 text-yellow-500 fill-current" />
                       <span className="text-sm font-medium">
                         {consultant.ratingCount > 0
-                          ? (consultant.ratingSum / (consultant.ratingCount * 10)).toFixed(1)
+                          ? (consultant.ratingSum / consultant.ratingCount).toFixed(1)
                           : "—"}
                       </span>
                       <span className="text-xs text-muted-foreground">

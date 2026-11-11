@@ -1,13 +1,18 @@
 import { notFound } from "next/navigation";
 import { getPublicConsultantBySlug } from "@/server/dal/consultant-search";
+import { getPublicReviewsForConsultant } from "@/server/dal/review";
+import { getCurrentUser } from "@/server/auth/dal";
 import { Container } from "@/components/layout/container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Globe, Clock, Calendar } from "lucide-react";
+import { MapPin, Globe, Clock, Calendar } from "lucide-react";
+import { RatingDisplay } from "@/features/reviews/rating-display";
+import { ReviewList } from "@/features/reviews/review-list";
 
 interface ConsultantProfilePageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: ConsultantProfilePageProps) {
@@ -24,22 +29,32 @@ export async function generateMetadata({ params }: ConsultantProfilePageProps) {
   };
 }
 
-export default async function ConsultantProfilePage({ params }: ConsultantProfilePageProps) {
+export default async function ConsultantProfilePage({
+  params,
+  searchParams,
+}: ConsultantProfilePageProps) {
   const { slug } = await params;
-  const profile = await getPublicConsultantBySlug(slug);
+  const { page: rawPage } = await searchParams;
+  const page = Math.max(1, parseInt(rawPage || "1", 10) || 1);
+
+  const [profile, currentUser] = await Promise.all([
+    getPublicConsultantBySlug(slug),
+    getCurrentUser(),
+  ]);
 
   if (!profile) {
     notFound();
   }
 
-  // profile is guaranteed to be non-null here because notFound() throws above
   const safeProfile = profile;
+  const { reviews, total, totalPages } = await getPublicReviewsForConsultant(safeProfile.id, {
+    page,
+    perPage: 5,
+  });
 
   function formatPrice(): string {
     return `${safeProfile.sessionPriceMinor / 100} ${safeProfile.currency}`;
   }
-
-  // formatDate is intentionally left unused for future use
 
   return (
     <Container className="flex flex-col gap-6 py-8">
@@ -58,22 +73,11 @@ export default async function ConsultantProfilePage({ params }: ConsultantProfil
         </div>
 
         {/* Rating */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                className={`h-5 w-5 ${star <= Math.round(safeProfile.ratingSum / (safeProfile.ratingCount * 10) || 0) ? "text-yellow-500 fill-current" : "text-muted-foreground"}`}
-              />
-            ))}
-          </div>
-          <span className="text-sm text-muted-foreground">
-            {safeProfile.ratingCount > 0
-              ? (safeProfile.ratingSum / (safeProfile.ratingCount * 10)).toFixed(1)
-              : "—"}{" "}
-            ({safeProfile.ratingCount} reviews)
-          </span>
-        </div>
+        <RatingDisplay
+          ratingSum={safeProfile.ratingSum}
+          ratingCount={safeProfile.ratingCount}
+          size="lg"
+        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -116,18 +120,20 @@ export default async function ConsultantProfilePage({ params }: ConsultantProfil
           )}
 
           {/* Reviews */}
-          {safeProfile.ratingCount > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Reviews</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Reviews will be displayed here once implemented.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Client Reviews ({total})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ReviewList
+                reviews={reviews}
+                total={total}
+                page={page}
+                totalPages={totalPages}
+                isAdmin={currentUser?.role === "ADMIN"}
+              />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}

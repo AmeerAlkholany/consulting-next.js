@@ -127,7 +127,7 @@ export default async function ConsultantDashboardPage() {
               <span className="text-muted-foreground">Rating:</span>
               <span className="font-medium">
                 {profile.ratingCount > 0
-                  ? (profile.ratingSum / (profile.ratingCount * 10)).toFixed(1)
+                  ? (profile.ratingSum / profile.ratingCount).toFixed(1)
                   : "—"}{" "}
                 ({profile.ratingCount} reviews)
               </span>

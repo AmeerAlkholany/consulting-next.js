@@ -2,50 +2,66 @@ import "server-only";
 
 import { db } from "@/db/client";
 import { logger } from "@/server/logger";
-import { AuthorizationError, NotFoundError } from "@/server/errors";
+import { AuthorizationError } from "@/server/errors";
 import type { SessionUser } from "@/server/auth/dal";
-import type { ReviewInput, ReviewEditInput } from "@/schemas/booking";
-import { BOOKING_POLICY } from "@/config/booking";
+import {
+  createReviewSchema,
+  updateReviewSchema,
+  unpublishReviewSchema,
+  isWithinReviewEditWindow,
+  isEligibleForReview,
+  type CreateReviewInput,
+  type UpdateReviewInput,
+  type UnpublishReviewInput,
+} from "@/schemas/review";
+import { sendNotification } from "@/server/services/notifications";
+import { getReviewReceivedTemplate } from "@/lib/notification-templates";
+import { Prisma } from "@/db/generated/prisma/client";
 
-export interface ReviewResult {
+export interface ReviewSuccessResult {
   status: "ok";
   reviewId: string;
 }
 
-export interface NotFoundResult {
-  status: "not_found";
+export interface ReviewErrorResult {
+  status: "error";
+  code: "NOT_ELIGIBLE" | "ALREADY_REVIEWED" | "REVIEW_WINDOW_CLOSED" | "EDIT_WINDOW_CLOSED" | "NOT_FOUND";
+  message: string;
 }
 
-export interface AlreadyExistsResult {
-  status: "already_exists";
-}
-
-export interface NotEligibleResult {
-  status: "not_eligible";
-  reason: string;
-}
-
-type ReviewOutcome = ReviewResult | NotFoundResult | AlreadyExistsResult | NotEligibleResult;
+export type ReviewMutationResult = ReviewSuccessResult | ReviewErrorResult;
 
 /**
- * Review service (IMPLEMENTATION.md Step 17).
- *
- * Creates and manages reviews for completed appointments.
- * Updates the denormalized ratingSum/ratingCount on the consultant profile.
+ * Creates a review for a completed appointment (BR-9).
+ * - Enforces client ownership, COMPLETED appointment status, single review, and 30-day review window.
+ * - Atomically inserts the review and increments consultant ratingSum and ratingCount.
+ * - Emits in-transaction REVIEW_RECEIVED notification and email outbox row to consultant.
  */
+export async function createReview(
+  actor: SessionUser,
+  input: CreateReviewInput
+): Promise<ReviewMutationResult> {
+  if (actor.role !== "CLIENT") {
+    throw new AuthorizationError("Only clients can submit reviews.");
+  }
 
-export async function createReview(actor: SessionUser, input: ReviewInput): Promise<ReviewOutcome> {
+  const validated = createReviewSchema.parse(input);
+
   const clientProfile = await db.clientProfile.findUnique({
     where: { userId: actor.id },
-    select: { id: true },
+    select: { id: true, displayName: true, user: { select: { fullName: true } } },
   });
 
   if (!clientProfile) {
-    return { status: "not_found" };
+    return {
+      status: "error",
+      code: "NOT_FOUND",
+      message: "Client profile not found.",
+    };
   }
 
   const appointment = await db.appointment.findUnique({
-    where: { id: input.appointmentId },
+    where: { id: validated.appointmentId },
     select: {
       id: true,
       clientProfileId: true,
@@ -53,156 +69,282 @@ export async function createReview(actor: SessionUser, input: ReviewInput): Prom
       status: true,
       endsAt: true,
       review: { select: { id: true } },
-      consultantProfile: { select: { ratingSum: true, ratingCount: true } },
+      consultantProfile: {
+        select: {
+          id: true,
+          slug: true,
+          userId: true,
+          user: { select: { fullName: true, email: true } },
+        },
+      },
     },
   });
 
   if (!appointment) {
-    return { status: "not_found" };
+    return {
+      status: "error",
+      code: "NOT_FOUND",
+      message: "Appointment not found.",
+    };
   }
 
   if (appointment.clientProfileId !== clientProfile.id) {
-    throw new AuthorizationError("You don't have access to this appointment.");
+    throw new AuthorizationError("You do not have access to review this appointment.");
   }
 
-  if (appointment.status !== "COMPLETED") {
-    return { status: "not_eligible", reason: "Only completed appointments can be reviewed." };
+  const eligibility = isEligibleForReview(appointment);
+  if (!eligibility.eligible) {
+    const isWindowClosed = eligibility.reason?.includes("review window");
+    return {
+      status: "error",
+      code: isWindowClosed ? "REVIEW_WINDOW_CLOSED" : "NOT_ELIGIBLE",
+      message: eligibility.reason || "Appointment is not eligible for review.",
+    };
   }
 
   if (appointment.review) {
-    return { status: "already_exists" };
+    return {
+      status: "error",
+      code: "ALREADY_REVIEWED",
+      message: "This appointment has already been reviewed.",
+    };
   }
 
-  // Check review window (30 days after completion)
-  const reviewWindowMs = BOOKING_POLICY.reviewWindowDays * 24 * 60 * 60 * 1000;
-  if (Date.now() - appointment.endsAt.getTime() > reviewWindowMs) {
-    return { status: "not_eligible", reason: "The review window has expired." };
+  try {
+    const result = await db.$transaction(async (tx) => {
+      // Create the review
+      const review = await tx.review.create({
+        data: {
+          appointmentId: appointment.id,
+          clientProfileId: clientProfile.id,
+          consultantProfileId: appointment.consultantProfileId,
+          rating: validated.rating,
+          comment: validated.comment,
+          isPublished: true,
+        },
+        select: { id: true },
+      });
+
+      // Update consultant denormalized aggregate atomically
+      await tx.consultantProfile.update({
+        where: { id: appointment.consultantProfileId },
+        data: {
+          ratingSum: { increment: validated.rating },
+          ratingCount: { increment: 1 },
+        },
+      });
+
+      // Send in-transaction notification to consultant
+      const consultantName = appointment.consultantProfile.user.fullName;
+      const emailTemplate = getReviewReceivedTemplate({
+        consultantName,
+        rating: validated.rating,
+      });
+
+      await sendNotification(
+        {
+          userId: appointment.consultantProfile.userId,
+          type: "REVIEW_RECEIVED",
+          payload: {
+            title: "New Review Received",
+            message: `You received a ${validated.rating}-star review for a completed consultation.`,
+            appointmentId: appointment.id,
+            consultantProfileId: appointment.consultantProfileId,
+            link: "/consultant/reviews",
+          },
+          emailDetails: {
+            toEmail: appointment.consultantProfile.user.email,
+            template: "REVIEW_RECEIVED",
+            data: emailTemplate,
+          },
+        },
+        tx
+      );
+
+      return review;
+    });
+
+    logger.info(
+      { reviewId: result.id, appointmentId: appointment.id, rating: validated.rating },
+      "review created and rating aggregates updated"
+    );
+
+    return { status: "ok", reviewId: result.id };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return {
+        status: "error",
+        code: "ALREADY_REVIEWED",
+        message: "A review already exists for this appointment.",
+      };
+    }
+    throw error;
   }
-
-  const result = await db.$transaction(async (tx) => {
-    const review = await tx.review.create({
-      data: {
-        appointmentId: input.appointmentId,
-        clientProfileId: clientProfile.id,
-        consultantProfileId: appointment.consultantProfileId,
-        rating: input.rating,
-        comment: input.comment,
-      },
-      select: { id: true },
-    });
-
-    // Update denormalized rating aggregate
-    await tx.consultantProfile.update({
-      where: { id: appointment.consultantProfileId },
-      data: {
-        ratingSum: { increment: input.rating },
-        ratingCount: { increment: 1 },
-      },
-    });
-
-    return review;
-  });
-
-  logger.info({ reviewId: result.id, appointmentId: input.appointmentId }, "review created");
-
-  return { status: "ok", reviewId: result.id };
 }
 
-export async function editReview(
+/**
+ * Updates a review within the 48-hour edit window.
+ * - Re-adjusts consultant ratingSum if rating changed.
+ */
+export async function updateReview(
   actor: SessionUser,
-  input: ReviewEditInput,
-): Promise<{ status: "ok"; reviewId: string } | { status: "error"; message: string }> {
+  input: UpdateReviewInput
+): Promise<ReviewMutationResult> {
+  if (actor.role !== "CLIENT") {
+    throw new AuthorizationError("Only clients can edit their reviews.");
+  }
+
+  const validated = updateReviewSchema.parse(input);
+
   const clientProfile = await db.clientProfile.findUnique({
     where: { userId: actor.id },
     select: { id: true },
   });
 
   if (!clientProfile) {
-    throw new NotFoundError("Client profile not found.");
+    return {
+      status: "error",
+      code: "NOT_FOUND",
+      message: "Client profile not found.",
+    };
   }
 
   const review = await db.review.findUnique({
-    where: { id: input.reviewId },
+    where: { id: validated.reviewId },
     select: {
       id: true,
       clientProfileId: true,
       consultantProfileId: true,
       rating: true,
-      comment: true,
+      isPublished: true,
       createdAt: true,
     },
   });
 
   if (!review) {
-    throw new NotFoundError("Review not found.");
+    return {
+      status: "error",
+      code: "NOT_FOUND",
+      message: "Review not found.",
+    };
   }
 
   if (review.clientProfileId !== clientProfile.id) {
-    throw new AuthorizationError("You don't have access to this review.");
+    throw new AuthorizationError("You do not have access to edit this review.");
   }
 
-  // Check edit window (48 hours)
-  const editWindowMs = BOOKING_POLICY.reviewEditWindowHours * 60 * 60 * 1000;
-  if (Date.now() - review.createdAt.getTime() > editWindowMs) {
-    return { status: "error", message: "The review edit window has expired (48 hours)." };
+  if (!isWithinReviewEditWindow(review.createdAt)) {
+    return {
+      status: "error",
+      code: "EDIT_WINDOW_CLOSED",
+      message: "The 48-hour editing window for this review has expired.",
+    };
   }
 
-  const oldRating = review.rating;
+  const ratingDiff = validated.rating - review.rating;
 
   await db.$transaction(async (tx) => {
     await tx.review.update({
-      where: { id: input.reviewId },
+      where: { id: review.id },
       data: {
-        rating: input.rating,
-        comment: input.comment,
+        rating: validated.rating,
+        comment: validated.comment,
       },
     });
 
-    // Adjust denormalized rating aggregate
-    const diff = input.rating - oldRating;
-    await tx.consultantProfile.update({
-      where: { id: review.consultantProfileId },
-      data: {
-        ratingSum: { increment: diff },
-      },
-    });
+    // If review is currently published, update aggregate sum by difference
+    if (review.isPublished && ratingDiff !== 0) {
+      await tx.consultantProfile.update({
+        where: { id: review.consultantProfileId },
+        data: {
+          ratingSum: { increment: ratingDiff },
+        },
+      });
+    }
   });
 
-  logger.info({ reviewId: input.reviewId }, "review edited");
+  logger.info(
+    { reviewId: review.id, oldRating: review.rating, newRating: validated.rating },
+    "review updated"
+  );
 
-  return { status: "ok", reviewId: input.reviewId };
+  return { status: "ok", reviewId: review.id };
 }
 
-export async function getConsultantReviews(
-  consultantProfileId: string,
-  options: { limit?: number; offset?: number } = {},
-): Promise<
-  Array<{
-    id: string;
-    rating: number;
-    comment: string | null;
-    createdAt: Date;
-    clientDisplayName: string;
-  }>
-> {
-  const { limit = 10, offset = 0 } = options;
+/**
+ * Admin action to unpublish/moderate an inappropriate review.
+ * - Moderates review (isPublished = false, moderatedById = actor.id)
+ * - Symmetrically decrements consultant ratingSum and ratingCount
+ * - Writes an AuditLog entry (BR-13)
+ */
+export async function unpublishReview(
+  actor: SessionUser,
+  input: UnpublishReviewInput
+): Promise<ReviewMutationResult> {
+  if (actor.role !== "ADMIN") {
+    throw new AuthorizationError("Only administrators can moderate reviews.");
+  }
 
-  const results = await db.review.findMany({
-    where: { consultantProfileId, isPublished: true },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-    skip: offset,
+  const validated = unpublishReviewSchema.parse(input);
+
+  const review = await db.review.findUnique({
+    where: { id: validated.reviewId },
     select: {
       id: true,
+      consultantProfileId: true,
       rating: true,
-      comment: true,
-      createdAt: true,
-      clientProfile: { select: { displayName: true } },
+      isPublished: true,
     },
   });
 
-  return results.map((r) => ({
-    ...r,
-    clientDisplayName: r.clientProfile.displayName,
-  }));
+  if (!review) {
+    return {
+      status: "error",
+      code: "NOT_FOUND",
+      message: "Review not found.",
+    };
+  }
+
+  // Idempotent check
+  if (!review.isPublished) {
+    return { status: "ok", reviewId: review.id };
+  }
+
+  await db.$transaction(async (tx) => {
+    // Mark unpublished
+    await tx.review.update({
+      where: { id: review.id },
+      data: {
+        isPublished: false,
+        moderatedById: actor.id,
+      },
+    });
+
+    // Decrement aggregates symmetrically
+    await tx.consultantProfile.update({
+      where: { id: review.consultantProfileId },
+      data: {
+        ratingSum: { decrement: review.rating },
+        ratingCount: { decrement: 1 },
+      },
+    });
+
+    // Write audit log entry (BR-13)
+    await tx.auditLog.create({
+      data: {
+        actorUserId: actor.id,
+        action: "REVIEW_UNPUBLISHED",
+        entityType: "Review",
+        entityId: review.id,
+        metadata: { reason: validated.reason },
+      },
+    });
+  });
+
+  logger.info(
+    { reviewId: review.id, adminId: actor.id, reason: validated.reason },
+    "review unpublished by admin and aggregates decremented"
+  );
+
+  return { status: "ok", reviewId: review.id };
 }

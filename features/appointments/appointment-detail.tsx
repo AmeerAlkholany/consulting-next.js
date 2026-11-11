@@ -219,6 +219,15 @@ export function AppointmentDetail({ appointment, viewerTimezone }: AppointmentDe
               </Link>
             </Button>
           )}
+
+          {appointment.status === "COMPLETED" && appointment.review && (
+            <Button asChild variant="outline">
+              <Link href={`/appointments/${appointment.id}/review` as unknown as "/appointments"}>
+                <Star className="h-4 w-4 mr-1.5" />
+                View / Edit Review
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </div>

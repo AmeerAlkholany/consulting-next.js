@@ -102,3 +102,16 @@ export function getConsultantSuspendedTemplate(data: {
     actionUrl: "/contact",
   };
 }
+
+export function getReviewReceivedTemplate(data: {
+  consultantName: string;
+  rating: number;
+}): EmailTemplateData {
+  return {
+    subject: `You received a new ${data.rating}-star review`,
+    headline: "New review received",
+    body: `A client has submitted a ${data.rating}-star review for your consultation session.`,
+    actionText: "View Reviews",
+    actionUrl: "/consultant/reviews",
+  };
+}

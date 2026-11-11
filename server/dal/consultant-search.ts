@@ -80,8 +80,7 @@ export async function searchConsultants(
   }
 
   if (input.minRating !== undefined) {
-    const minSum = input.minRating * 10 * (input.minRating === 5 ? 1 : 1);
-    where.ratingSum = { gte: Math.ceil(minSum) };
+    where.ratingSum = { gte: input.minRating };
     where.ratingCount = { gte: 1 };
   }
 

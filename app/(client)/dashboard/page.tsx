@@ -7,10 +7,12 @@ import {
   getNextClientAppointment,
   getClientAppointmentsByTab,
 } from "@/server/dal/appointment";
+import { getClientReviewableAppointments } from "@/server/dal/review";
 import { Container } from "@/components/layout/container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { NextAppointmentCard } from "@/features/appointments/next-appointment-card";
+import { ReviewPrompt } from "@/features/reviews/review-prompt";
 import { CalendarDays, Clock, CheckCircle2, User, Sparkles } from "lucide-react";
 import Link from "next/link";
 
@@ -30,12 +32,13 @@ export default async function ClientDashboardPage() {
   const now = new Date();
 
   // Load next appointment and counts in parallel
-  const [nextAppointment, upcomingData, pastData, pendingData] = await Promise.all([
+  const [nextAppointment, upcomingData, pastData, pendingData, reviewableAppointments] = await Promise.all([
     getNextClientAppointment(profile.id, now),
     getClientAppointmentsByTab(profile.id, "upcoming", { limit: 1, now }),
     getClientAppointmentsByTab(profile.id, "past", { limit: 1, now }),
     // Pending requests specifically
     getClientAppointmentsByTab(profile.id, "upcoming", { limit: 50, now }),
+    getClientReviewableAppointments(profile.id, now),
   ]);
 
   const pendingCount = pendingData.appointments.filter((a) => a.status === "PENDING").length;
@@ -50,6 +53,9 @@ export default async function ClientDashboardPage() {
           Here is your consultation schedule and upcoming appointments.
         </p>
       </div>
+
+      {/* Review Prompt Banner for recently completed sessions */}
+      <ReviewPrompt appointments={reviewableAppointments} />
 
       {/* Next Appointment Hero Card */}
       <NextAppointmentCard appointment={nextAppointment} viewerTimezone={profile.timezone} />

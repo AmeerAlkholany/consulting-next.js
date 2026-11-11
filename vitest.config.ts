@@ -18,6 +18,17 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
  */
 export default defineConfig({
   test: {
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+      include: ["server/services/**", "lib/**"],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 70,
+        statements: 80,
+      },
+    },
     projects: [
       {
         resolve: {

@@ -51,8 +51,8 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // Exemption for config/env.ts, config/load-env.ts, and prisma.config.ts which are CLI/env entry points.
-    files: ["config/env.ts", "config/load-env.ts", "prisma.config.ts"],
+    // Exemption for config/env.ts, config/load-env.ts, prisma.config.ts, and playwright.config.ts which are CLI/env entry points.
+    files: ["config/env.ts", "config/load-env.ts", "prisma.config.ts", "playwright.config.ts"],
     rules: {
       "no-restricted-properties": "off",
     },

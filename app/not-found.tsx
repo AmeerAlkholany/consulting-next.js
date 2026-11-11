@@ -5,20 +5,20 @@ import { cn } from "@/lib/cn";
 
 export default function NotFound() {
   return (
-    <Container className="flex flex-col gap-6 py-20">
-      <p className="text-sm font-medium uppercase tracking-wide text-primary">404</p>
-      <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-        We could not find that page
-      </h1>
-      <p className="max-w-measure text-base text-muted-foreground">
-        The link may be out of date. You can browse consultants, or return to the home page.
-      </p>
-      <div className="flex flex-wrap gap-3">
-        <Link href="/" className={cn(buttonVariants())}>
-          Go to the home page
+    <Container className="flex flex-col items-center justify-center gap-6 py-24 text-center">
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-semibold tracking-wider text-primary uppercase">404 Error</p>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Page not found</h1>
+        <p className="max-w-md text-muted-foreground">
+          Sorry, we couldn&apos;t find the page you&apos;re looking for. It may have been moved, expired, or deleted.
+        </p>
+      </div>
+      <div className="flex gap-4">
+        <Link href="/" className={cn(buttonVariants({ variant: "default" }))}>
+          Go to Home
         </Link>
         <Link href="/consultants" className={cn(buttonVariants({ variant: "outline" }))}>
-          Find a consultant
+          Browse Consultants
         </Link>
       </div>
     </Container>

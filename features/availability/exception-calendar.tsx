@@ -22,6 +22,7 @@ import {
 } from "@/features/availability/actions";
 import { initialAuthFormState, type AuthFormState } from "@/features/auth/form-state";
 import { Trash2, Plus, CalendarOff, AlertCircle, Clock } from "lucide-react";
+import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 
 export interface SerializedAvailabilityException {
   id: string;
@@ -100,7 +101,6 @@ export function ExceptionCalendar({ exceptions }: ExceptionCalendarProps) {
   };
 
   const handleDelete = (id: string) => {
-    if (!confirm("Are you sure you want to remove this date exception?")) return;
     setActionError(null);
 
     const formData = new FormData();
@@ -295,16 +295,24 @@ export function ExceptionCalendar({ exceptions }: ExceptionCalendarProps) {
                   )}
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDelete(exc.id)}
-                  disabled={isPending}
-                  aria-label="Delete exception"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <ConfirmDialog
+                  title="Remove date exception?"
+                  description={`Remove the ${exc.type === "BLOCK" ? "block" : "extra hours override"} for ${exc.date.split("T")[0]}.`}
+                  confirmLabel="Remove Exception"
+                  tone="destructive"
+                  onConfirm={() => handleDelete(exc.id)}
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      disabled={isPending}
+                      aria-label="Delete exception"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  }
+                />
               </div>
             ))}
           </div>

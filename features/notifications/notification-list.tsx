@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { NotificationItem } from "./notification-item";
 import { MarkAllRead } from "./mark-all-read";
 import { BellOff } from "lucide-react";
+import { EmptyState } from "@/components/feedback/empty-state";
 import type { NotificationRow } from "@/server/dal/notification";
 
 interface NotificationListProps {
@@ -45,13 +46,12 @@ export function NotificationList({
       <Card className="overflow-hidden">
         <CardContent className="p-0">
           {notifications.length === 0 ? (
-            <div className="py-16 text-center space-y-3">
-              <BellOff className="h-10 w-10 text-muted-foreground/60 mx-auto" />
-              <p className="text-sm font-medium text-foreground">No notifications</p>
-              <p className="text-xs text-muted-foreground">
-                You&apos;re all caught up! Updates regarding consultations will appear here.
-              </p>
-            </div>
+            <EmptyState
+              icon={<BellOff className="h-6 w-6" />}
+              title="No notifications"
+              description="You're all caught up! Updates regarding consultations and booking requests will appear here."
+              className="border-0 shadow-none py-16"
+            />
           ) : (
             notifications.map((notification) => (
               <NotificationItem

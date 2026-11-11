@@ -2,9 +2,9 @@ import { requireAdmin } from "@/server/authz/guards";
 import { getConsultantsForAdmin } from "@/server/dal/admin";
 import { Container } from "@/components/layout/container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, MoreHorizontal } from "lucide-react";
+import { Search } from "lucide-react";
+import { ConsultantActionsCell } from "@/features/admin/consultant-actions-cell";
 
 export default async function AdminConsultantsPage() {
   await requireAdmin();
@@ -111,51 +111,11 @@ export default async function AdminConsultantsPage() {
                           {c.sessionPriceMinor / 100} {c.currency}
                         </td>
                         <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="icon" aria-label="View details">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                            {c.verificationStatus === "PENDING" && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-success"
-                                  onClick={() => {}}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive"
-                                  onClick={() => {}}
-                                >
-                                  Reject
-                                </Button>
-                              </>
-                            )}
-                            {c.verificationStatus === "APPROVED" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive"
-                                onClick={() => {}}
-                              >
-                                Suspend
-                              </Button>
-                            )}
-                            {c.verificationStatus === "SUSPENDED" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-success"
-                                onClick={() => {}}
-                              >
-                                Reinstate
-                              </Button>
-                            )}
-                          </div>
+                          <ConsultantActionsCell
+                            consultantId={c.id}
+                            consultantName={c.fullName}
+                            verificationStatus={c.verificationStatus}
+                          />
                         </td>
                       </tr>
                     );

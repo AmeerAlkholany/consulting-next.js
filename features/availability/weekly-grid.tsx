@@ -8,6 +8,7 @@ import { RuleEditor, type RuleData } from "@/features/availability/rule-editor";
 import { deleteAvailabilityRuleAction } from "@/features/availability/actions";
 import { initialAuthFormState } from "@/features/auth/form-state";
 import { Trash2, Calendar, Clock, AlertCircle } from "lucide-react";
+import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 
 export interface SerializedAvailabilityRule {
   id: string;
@@ -46,7 +47,6 @@ export function WeeklyGrid({ rules }: WeeklyGridProps) {
   const [error, setError] = useState<string | null>(null);
 
   const handleDelete = (id: string) => {
-    if (!confirm("Are you sure you want to delete this availability rule?")) return;
     setError(null);
 
     const formData = new FormData();
@@ -156,16 +156,24 @@ export function WeeklyGrid({ rules }: WeeklyGridProps) {
 
                             <div className="flex items-center gap-1">
                               <RuleEditor initialRule={ruleData} />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                                onClick={() => handleDelete(rule.id)}
-                                disabled={isPending}
-                                aria-label="Delete rule"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <ConfirmDialog
+                                title="Delete recurring rule?"
+                                description={`Permanently remove availability on ${day.name} from ${minutesToTime(rule.startMinute)} to ${minutesToTime(rule.endMinute)}.`}
+                                confirmLabel="Delete Rule"
+                                tone="destructive"
+                                onConfirm={() => handleDelete(rule.id)}
+                                trigger={
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                    disabled={isPending}
+                                    aria-label="Delete rule"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                }
+                              />
                             </div>
                           </div>
                         );

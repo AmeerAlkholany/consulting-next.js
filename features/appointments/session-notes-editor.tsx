@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Lock, Save, Trash2, Edit3, Shield } from "lucide-react";
+import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import {
   upsertAppointmentNoteAction,
   deleteAppointmentNoteAction,
@@ -87,7 +88,6 @@ export function SessionNotesEditor({
   };
 
   const handleDeleteNote = (noteId: string) => {
-    if (!confirm("Are you sure you want to permanently delete this note?")) return;
     setError(null);
 
     startTransition(async () => {
@@ -207,16 +207,24 @@ export function SessionNotesEditor({
                           <Edit3 className="h-3.5 w-3.5 mr-1" />
                           Edit
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteNote(note.id)}
-                          disabled={isPending}
-                        >
-                          <Trash2 className="h-3.5 w-3.5 mr-1" />
-                          Delete
-                        </Button>
+                        <ConfirmDialog
+                          title="Delete clinical note?"
+                          description="This private note will be permanently erased from the database. This action cannot be undone."
+                          confirmLabel="Delete Note"
+                          tone="destructive"
+                          onConfirm={() => handleDeleteNote(note.id)}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                              disabled={isPending}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              Delete
+                            </Button>
+                          }
+                        />
                       </div>
                     </div>
                   </>

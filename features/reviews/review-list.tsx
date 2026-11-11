@@ -2,6 +2,7 @@
 
 import { ReviewCard } from "./review-card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/feedback/empty-state";
 import { MessageSquare } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -42,10 +43,11 @@ export function ReviewList({
 
   if (reviews.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 rounded-lg border border-dashed text-center">
-        <MessageSquare className="h-8 w-8 text-muted-foreground/40 mb-2" />
-        <p className="text-sm text-muted-foreground">{emptyMessage}</p>
-      </div>
+      <EmptyState
+        icon={<MessageSquare className="h-6 w-6" />}
+        title="No reviews yet"
+        description={emptyMessage}
+      />
     );
   }
 

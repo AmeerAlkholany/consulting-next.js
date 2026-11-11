@@ -34,6 +34,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-overlay focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          Skip to main content
+        </a>
+        <div id="live-region" aria-live="polite" aria-atomic="true" className="sr-only" />
         <Toaster>{null}</Toaster>
         <Suspense fallback={null}>
           <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">

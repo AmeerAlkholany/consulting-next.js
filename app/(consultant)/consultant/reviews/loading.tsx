@@ -1,0 +1,12 @@
+import { CardListSkeleton, PageHeaderSkeleton } from "@/components/feedback/loading-skeletons";
+import { Container } from "@/components/layout/container";
+
+export default function ConsultantReviewsLoading() {
+  return (
+    <Container className="flex flex-col gap-8 py-10">
+      <PageHeaderSkeleton />
+      <CardListSkeleton count={3} />
+    </Container>
+  );
+}
+

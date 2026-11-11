@@ -24,6 +24,7 @@ import {
   UserCheck,
   UserX,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import type { ConsultantAppointmentRow } from "@/server/dal/appointment";
 
 interface ConsultantAppointmentDetailProps {
@@ -89,7 +90,6 @@ export function ConsultantAppointmentDetail({
   };
 
   const handleNoShow = () => {
-    if (!confirm("Are you sure you want to mark this client as a no-show?")) return;
     setError(null);
     startTransition(async () => {
       const res = await markNoShowAction(appointment.id);
@@ -160,15 +160,23 @@ export function ConsultantAppointmentDetail({
                 </Button>
               )}
               {canMarkNoShow && (
-                <Button
-                  variant="outline"
-                  onClick={handleNoShow}
-                  disabled={isPending}
-                  className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <UserX className="h-4 w-4" />
-                  {isPending ? "Updating..." : "Mark No-Show"}
-                </Button>
+                <ConfirmDialog
+                  title="Mark client as no-show?"
+                  description={`Record that ${appointment.clientDisplayName} did not attend this consultation. This closes the appointment as a terminal no-show.`}
+                  confirmLabel="Mark No-Show"
+                  tone="destructive"
+                  onConfirm={handleNoShow}
+                  trigger={
+                    <Button
+                      variant="outline"
+                      disabled={isPending}
+                      className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <UserX className="h-4 w-4" />
+                      {isPending ? "Updating..." : "Mark No-Show"}
+                    </Button>
+                  }
+                />
               )}
             </div>
           </CardContent>

@@ -12,8 +12,8 @@ const nextConfig: NextConfig = {
   // parse it (ARCHITECTURE.md §3).
   serverExternalPackages: ["@node-rs/argon2"],
 
-  // Baseline security headers configured per ARCHITECTURE.md §16.
-  // Full CSP and per-request nonce injection are introduced in Step 19.
+  // Security headers configured per ARCHITECTURE.md §16.
+  // Dynamic CSP nonce injection is performed in proxy.ts.
   async headers() {
     return [
       {
@@ -26,6 +26,18 @@ const nextConfig: NextConfig = {
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), payment=()",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
           },
         ],
       },

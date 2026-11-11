@@ -26,34 +26,33 @@ export interface LanguageRow {
 
 /** Fetches all specializations with consultant usage counts. */
 export async function getSpecializations(): Promise<SpecializationRow[]> {
-  const rows = await db.$queryRawUnsafe<SpecializationRow[]>(
-    `SELECT "s"."id", "s"."slug", "s"."name", "s"."description", "s"."isActive", "s"."sortOrder", "s"."createdAt", "s"."updatedAt",
-            COALESCE("cs"."cnt", 0) AS "consultantCount"
-     FROM "Specialization" "s"
-     LEFT JOIN (
-       SELECT "specializationId", COUNT(*) AS "cnt"
-       FROM "ConsultantSpecialization"
-       GROUP BY "specializationId"
-     ) "cs" ON "cs"."specializationId" = "s"."id"
-     ORDER BY "s"."sortOrder" ASC, "s"."name" ASC`,
-  );
+  const rows = await db.$queryRaw<SpecializationRow[]>`
+    SELECT "s"."id", "s"."slug", "name", "description", "s"."isActive", "s"."sortOrder", "s"."createdAt", "s"."updatedAt",
+           COALESCE("cs"."cnt", 0)::int AS "consultantCount"
+    FROM "Specialization" "s"
+    LEFT JOIN (
+      SELECT "specializationId", COUNT(*)::int AS "cnt"
+      FROM "ConsultantSpecialization"
+      GROUP BY "specializationId"
+    ) "cs" ON "cs"."specializationId" = "s"."id"
+    ORDER BY "s"."sortOrder" ASC, "s"."name" ASC
+  `;
   return rows;
 }
 
 /** Fetches a single specialization by ID. */
 export async function getSpecializationById(id: string): Promise<SpecializationRow | null> {
-  const rows = await db.$queryRawUnsafe<SpecializationRow[]>(
-    `SELECT "s"."id", "s"."slug", "s"."name", "s"."description", "s"."isActive", "s"."sortOrder", "s"."createdAt", "s"."updatedAt",
-            COALESCE("cs"."cnt", 0) AS "consultantCount"
-     FROM "Specialization" "s"
-     LEFT JOIN (
-       SELECT "specializationId", COUNT(*) AS "cnt"
-       FROM "ConsultantSpecialization"
-       GROUP BY "specializationId"
-     ) "cs" ON "cs"."specializationId" = "s"."id"
-     WHERE "s"."id" = $1`,
-    id,
-  );
+  const rows = await db.$queryRaw<SpecializationRow[]>`
+    SELECT "s"."id", "s"."slug", "name", "description", "s"."isActive", "s"."sortOrder", "s"."createdAt", "s"."updatedAt",
+           COALESCE("cs"."cnt", 0)::int AS "consultantCount"
+    FROM "Specialization" "s"
+    LEFT JOIN (
+      SELECT "specializationId", COUNT(*)::int AS "cnt"
+      FROM "ConsultantSpecialization"
+      GROUP BY "specializationId"
+    ) "cs" ON "cs"."specializationId" = "s"."id"
+    WHERE "s"."id" = ${id}
+  `;
   return rows[0] ?? null;
 }
 
@@ -71,23 +70,23 @@ export async function getActiveSpecializations(): Promise<
 
 /** Fetches all languages with usage counts. */
 export async function getLanguages(): Promise<LanguageRow[]> {
-  const rows = await db.$queryRawUnsafe<LanguageRow[]>(
-    `SELECT "l"."id", "l"."code", "l"."name", "l"."createdAt", "l"."updatedAt",
-            COALESCE("cl"."cnt", 0) AS "consultantCount",
-            COALESCE("cli"."cnt", 0) AS "clientCount"
-     FROM "Language" "l"
-     LEFT JOIN (
-       SELECT "languageId", COUNT(*) AS "cnt"
-       FROM "ConsultantLanguage"
-       GROUP BY "languageId"
-     ) "cl" ON "cl"."languageId" = "l"."id"
-     LEFT JOIN (
-       SELECT "languageId", COUNT(*) AS "cnt"
-       FROM "ClientLanguage"
-       GROUP BY "languageId"
-     ) "cli" ON "cli"."languageId" = "l"."id"
-     ORDER BY "l"."name" ASC`,
-  );
+  const rows = await db.$queryRaw<LanguageRow[]>`
+    SELECT "l"."id", "l"."code", "l"."name", "l"."createdAt", "l"."updatedAt",
+           COALESCE("cl"."cnt", 0)::int AS "consultantCount",
+           COALESCE("cli"."cnt", 0)::int AS "clientCount"
+    FROM "Language" "l"
+    LEFT JOIN (
+      SELECT "languageId", COUNT(*)::int AS "cnt"
+      FROM "ConsultantLanguage"
+      GROUP BY "languageId"
+    ) "cl" ON "cl"."languageId" = "l"."id"
+    LEFT JOIN (
+      SELECT "languageId", COUNT(*)::int AS "cnt"
+      FROM "ClientLanguage"
+      GROUP BY "languageId"
+    ) "cli" ON "cli"."languageId" = "l"."id"
+    ORDER BY "l"."name" ASC
+  `;
   return rows;
 }
 

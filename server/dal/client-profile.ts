@@ -54,9 +54,8 @@ export async function getClientProfile(userId: string): Promise<ClientProfileDat
 
 /** Returns the count of active sessions for the caller. */
 export async function countActiveSessions(userId: string): Promise<number> {
-  const [{ count }] = await db.$queryRawUnsafe<[{ count: bigint }]>(
-    `SELECT COUNT(*) AS count FROM "Session" WHERE "userId" = $1 AND "revokedAt" IS NULL`,
-    userId,
-  );
+  const [{ count }] = await db.$queryRaw<[{ count: bigint }]>`
+    SELECT COUNT(*) AS count FROM "Session" WHERE "userId" = ${userId} AND "revokedAt" IS NULL
+  `;
   return Number(count ?? 0);
 }

@@ -65,7 +65,7 @@ const eslintConfig = defineConfig([
     rules: jsxA11y.flatConfigs.recommended.rules,
   },
   {
-    // No HTML injection anywhere in the codebase.
+    // Security rules: No raw HTML injection, no unparameterized raw SQL.
     files: ["**/*.{js,jsx,ts,tsx}"],
     rules: {
       "no-restricted-syntax": [
@@ -74,6 +74,11 @@ const eslintConfig = defineConfig([
           selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
           message:
             "dangerouslySetInnerHTML is not allowed. Render values through React so they are escaped.",
+        },
+        {
+          selector: "MemberExpression[property.name='$queryRawUnsafe']",
+          message:
+            "$queryRawUnsafe is banned. Use parameterized $queryRaw template literals in server/dal/ instead.",
         },
       ],
     },

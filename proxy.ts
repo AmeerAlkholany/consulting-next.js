@@ -3,24 +3,22 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { hashOpaqueToken } from "@/server/auth/tokens";
 import { protectedPathPrefixes, authOnlyPathPrefixes } from "@/config/roles";
+import { generateCspNonce, generateCspHeader } from "@/server/security/csp";
+import { getSecurityHeaders } from "@/server/security/headers";
 
 /**
- * Coarse route protection (ARCHITECTURE.md §10, IMPLEMENTATION.md Step 5).
+ * Coarse route protection and security header injection (ARCHITECTURE.md §10, §16).
  *
- * Proxy runs on every route, including prefetches, so it must be cheap:
- * one cookie read, one hashed lookup (no JOIN, no profile fetch), and a
- * redirect or pass-through. The authoritative authorization lives in the
- * guards and services each route calls; this file only prevents anonymous
- * visitors from reaching the app shells and prevents signed-in users from
- * lingering on auth pages.
- *
- * `x-request-id` is generated here so every request carried a correlation
- * header the rest of the stack can attach logs to.
+ * Proxy runs on every route, including prefetches:
+ * - Injects cryptographically random CSP nonce into request and response headers.
+ * - Sets strict security headers (CSP, HSTS, X-Content-Type-Options, etc.).
+ * - Adds X-Robots-Tag: noindex to protected/authenticated routes.
+ * - Ensures request correlation via x-request-id.
  */
 
 const SESSION_COOKIE_NAME = "session";
 
-/** Nonce-like random string for the request id. Not cryptographic. */
+/** Nonce-like random string for the request id. */
 function generateRequestId(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -29,14 +27,15 @@ function generateRequestId(): string {
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const requestId = generateRequestId();
-  const responseHeaders = new Headers();
-  responseHeaders.set("x-request-id", requestId);
-
+  const cspNonce = generateCspNonce();
   const pathname = request.nextUrl.pathname;
 
+  // Clone request headers so downstream Server Components can read x-nonce and x-request-id
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-request-id", requestId);
+  requestHeaders.set("x-nonce", cspNonce);
+
   // Cookie-presence check only: no database read, no session row fetch.
-  // The raw token is hashed here so the database lookup (when needed below)
-  // works against the same value the session module expects.
   const rawToken = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const tokenHash = rawToken ? hashOpaqueToken(rawToken) : null;
 
@@ -46,6 +45,23 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   // Auth-only routes: signed-in users are redirected away.
   const isAuthOnly = authOnlyPathPrefixes.some((prefix) => matchesPrefix(pathname, prefix));
 
+  // Build security headers
+  const securityHeaders = getSecurityHeaders({
+    nonce: cspNonce,
+    isPrivate: isProtected,
+  });
+
+  const responseHeaders = new Headers();
+  responseHeaders.set("x-request-id", requestId);
+  responseHeaders.set("x-nonce", cspNonce);
+
+  for (const [key, value] of Object.entries(securityHeaders)) {
+    responseHeaders.set(key, value);
+  }
+
+  // Set CSP header explicitly
+  responseHeaders.set("Content-Security-Policy", generateCspHeader(cspNonce));
+
   if (isProtected && !tokenHash) {
     const next = safeNext(pathname);
     const url = new URL(`/login?next=${encodeURIComponent(next)}`, request.url);
@@ -53,14 +69,16 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   if (isAuthOnly && tokenHash) {
-    // The token is hashed, not decrypted: we do not know the role here.
-    // Route to the generic dashboard; the role-specific layout guards
-    // will redirect to the correct shell based on the user's role.
     const url = new URL("/dashboard", request.url);
     return NextResponse.redirect(url, { headers: responseHeaders });
   }
 
-  return NextResponse.next({ headers: responseHeaders });
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+    headers: responseHeaders,
+  });
 }
 
 /**

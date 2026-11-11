@@ -88,11 +88,20 @@ async function countRows(
     | "EmailOutbox"
     | "ConsultantProfile",
 ): Promise<number> {
-  const [row] = await prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
-    `SELECT count(*)::bigint AS count FROM "${table}"`,
-  );
-
-  return Number(row?.count ?? 0);
+  switch (table) {
+    case "User":
+      return prisma.user.count();
+    case "Session":
+      return prisma.session.count();
+    case "ClientProfile":
+      return prisma.clientProfile.count();
+    case "VerificationToken":
+      return prisma.verificationToken.count();
+    case "EmailOutbox":
+      return prisma.emailOutbox.count();
+    case "ConsultantProfile":
+      return prisma.consultantProfile.count();
+  }
 }
 
 beforeAll(async () => {

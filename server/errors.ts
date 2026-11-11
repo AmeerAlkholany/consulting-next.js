@@ -131,7 +131,7 @@ export class ClientDoubleBookedError extends ConflictError {
 
 /**
  * Checks whether an error is a PostgreSQL 23P01 exclusion constraint violation
- * for appointment overlapping.
+ * or transaction write conflict (P2034 / 40001 / 40P01) for appointment overlapping.
  */
 export function isExclusionViolation(error: unknown): {
   isExclusion: boolean;
@@ -142,7 +142,13 @@ export function isExclusionViolation(error: unknown): {
     (error instanceof Error ? error.message : "") +
     (typeof error === "object" && error !== null ? JSON.stringify(error) : String(error));
 
-  if (str.includes("23P01") || str.includes("exclusion constraint")) {
+  if (
+    str.includes("23P01") ||
+    str.includes("exclusion constraint") ||
+    str.includes("P2034") ||
+    str.includes("write conflict") ||
+    str.includes("deadlock")
+  ) {
     if (str.includes("appointment_client_no_overlap")) {
       return { isExclusion: true, constraint: "appointment_client_no_overlap" };
     }

@@ -1,6 +1,6 @@
 # Implementation Plan — Psychological Consultation Booking Platform
 
-**Status:** Steps 1 through 18 completed and verified. Next step: Step 19 (Security hardening).
+**Status:** Steps 1 through 19 completed and verified. Next step: Step 20 (UX states, accessibility, and error polish).
 **Companion documents:** [ARCHITECTURE.md](./ARCHITECTURE.md) (the design this plan realizes) and [ADR.md](./ADR.md) (why each choice was made).
 
 ---
@@ -60,8 +60,8 @@
 | 16  | Notifications                              | 12, 13, 14, 15 | Completed   |
 | 17  | Reviews and ratings                        | 13, 14         | Completed   |
 | 18  | Scheduled jobs and email delivery          | 16             | Completed   |
-| 19  | Security hardening                         | 1–18           | Up Next     |
-| 20  | UX states, accessibility, and error polish | 2, 5–17        | Pending     |
+| 19  | Security hardening                         | 1–18           | Completed   |
+| 20  | UX states, accessibility, and error polish | 2, 5–17        | Up Next     |
 | 21  | Test suite completion                      | 1–20           | Pending     |
 | 22  | Performance optimization                   | 21             | Pending     |
 | 23  | Production preparation                     | 19, 21, 22     | Pending     |

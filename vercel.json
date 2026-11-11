@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/complete-appointments",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/send-reminders",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/drain-outbox",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/prune",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

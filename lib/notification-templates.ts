@@ -115,3 +115,19 @@ export function getReviewReceivedTemplate(data: {
     actionUrl: "/consultant/reviews",
   };
 }
+
+export function getAppointmentReminderTemplate(data: {
+  recipientName: string;
+  otherPartyName: string;
+  startsAtFormatted: string;
+  appointmentId: string;
+  timeframeText: string;
+}): EmailTemplateData {
+  return {
+    subject: `Reminder: Consultation with ${data.otherPartyName} ${data.timeframeText}`,
+    headline: "Upcoming Consultation Reminder",
+    body: `This is a reminder that your consultation appointment with ${data.otherPartyName} is scheduled for ${data.startsAtFormatted} (${data.timeframeText}).`,
+    actionText: "View Appointment",
+    actionUrl: `/appointments/${data.appointmentId}`,
+  };
+}

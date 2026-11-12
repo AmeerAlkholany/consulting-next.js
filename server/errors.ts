@@ -129,32 +129,85 @@ export class ClientDoubleBookedError extends ConflictError {
   }
 }
 
+export type OverlapConstraint =
+  "appointment_consultant_no_overlap" | "appointment_client_no_overlap";
+
+/**
+ * Flattens a database error into searchable text. The driver adapter nests the
+ * PostgreSQL code and constraint name at varying depths, so both the message
+ * and the serialised error are inspected.
+ */
+function describeDatabaseError(error: unknown): string {
+  if (!error) return "";
+  let serialised: string;
+  try {
+    serialised =
+      typeof error === "object" && error !== null ? JSON.stringify(error) : String(error);
+  } catch {
+    serialised = "";
+  }
+  return (error instanceof Error ? error.message : "") + serialised;
+}
+
 /**
  * Checks whether an error is a PostgreSQL 23P01 exclusion constraint violation
- * or transaction write conflict (P2034 / 40001 / 40P01) for appointment overlapping.
+ * for appointment overlapping. This is a definitive answer: the slot is taken.
+ *
+ * Transient write conflicts are deliberately not matched here; they say nothing
+ * about which constraint (if any) would fail. See `isTransientWriteConflict`.
  */
 export function isExclusionViolation(error: unknown): {
   isExclusion: boolean;
-  constraint?: "appointment_consultant_no_overlap" | "appointment_client_no_overlap";
+  constraint?: OverlapConstraint;
 } {
-  if (!error) return { isExclusion: false };
-  const str =
-    (error instanceof Error ? error.message : "") +
-    (typeof error === "object" && error !== null ? JSON.stringify(error) : String(error));
+  const str = describeDatabaseError(error);
 
-  if (
-    str.includes("23P01") ||
-    str.includes("exclusion constraint") ||
-    str.includes("P2034") ||
-    str.includes("write conflict") ||
-    str.includes("deadlock")
-  ) {
+  if (str.includes("23P01") || str.includes("exclusion constraint")) {
     if (str.includes("appointment_client_no_overlap")) {
       return { isExclusion: true, constraint: "appointment_client_no_overlap" };
     }
     return { isExclusion: true, constraint: "appointment_consultant_no_overlap" };
   }
   return { isExclusion: false };
+}
+
+/**
+ * Checks whether an error is a transaction write conflict or deadlock
+ * (Prisma P2034 / PostgreSQL 40001 / 40P01). The transaction was rolled back
+ * through no fault of its own and is safe to run again.
+ */
+export function isTransientWriteConflict(error: unknown): boolean {
+  const str = describeDatabaseError(error);
+  return (
+    str.includes("P2034") ||
+    str.includes("40001") ||
+    str.includes("40P01") ||
+    str.includes("write conflict") ||
+    str.includes("could not serialize access") ||
+    str.includes("deadlock detected")
+  );
+}
+
+const WRITE_CONFLICT_MAX_ATTEMPTS = 3;
+
+/**
+ * Runs a transactional operation, re-running it when the database aborts it
+ * with a transient write conflict. The retry then either succeeds or fails
+ * with the real cause (for example a 23P01 naming the violated constraint).
+ * The last conflict is rethrown once attempts are exhausted.
+ */
+export async function retryOnWriteConflict<T>(operation: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attempt >= WRITE_CONFLICT_MAX_ATTEMPTS || !isTransientWriteConflict(error)) {
+        throw error;
+      }
+      // Jittered backoff so the colliding transactions do not collide again.
+      await new Promise((resolve) => setTimeout(resolve, attempt * 25 + Math.random() * 50));
+    }
+  }
 }
 
 /**

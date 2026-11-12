@@ -2,7 +2,7 @@ import "server-only";
 
 import { db } from "@/db/client";
 import { logger } from "@/server/logger";
-import { AuthorizationError, isExclusionViolation } from "@/server/errors";
+import { AuthorizationError, isExclusionViolation, retryOnWriteConflict } from "@/server/errors";
 import type { SessionUser } from "@/server/auth/dal";
 import { getClientProfile } from "@/server/dal/client-profile";
 import { getConsultantProfile } from "@/server/dal/consultant-profile";
@@ -155,59 +155,63 @@ export async function createBooking(
 
   // Create the appointment in a transaction with exclusion violation handling
   try {
-    const result = await db.$transaction(async (tx) => {
-      const appointment = await tx.appointment.create({
-        data: {
-          clientProfileId: clientProfile.id,
-          consultantProfileId: consultantProfile.id,
-          startsAt,
-          endsAt,
-          clientTimezone: actor.timezone,
-          consultantTimezone: consultantProfile.timezone,
-          status: consultantProfile.autoConfirmBookings ? "CONFIRMED" : "PENDING",
-          confirmedAt: consultantProfile.autoConfirmBookings ? new Date() : null,
-          consultationType: input.consultationType,
-          priceMinor: consultantProfile.sessionPriceMinor,
-          currency: consultantProfile.currency,
-          sessionDurationMinutes: consultantProfile.sessionDurationMinutes,
-          clientNote: input.clientNote,
-          requestIdempotencyKey: input.idempotencyKey,
-        },
-        select: { id: true, status: true },
-      });
-
-      // Emit notification & queue email outbox inside the transaction (ARCHITECTURE.md §20)
-      const consultantUser = await tx.consultantProfile.findUnique({
-        where: { id: consultantProfile.id },
-        select: { userId: true, user: { select: { email: true, fullName: true } } },
-      });
-
-      if (consultantUser) {
-        const startsAtFormatted = startsAt.toUTCString();
-        await sendNotification(
-          {
-            userId: consultantUser.userId,
-            type: "APPOINTMENT_REQUESTED",
-            payload: {
-              title: "New Booking Request",
-              message: `${clientProfile.displayName} requested an appointment on ${startsAtFormatted}`,
-              appointmentId: appointment.id,
-              link: `/consultant/appointments/${appointment.id}`,
-            },
-            emailDetails: {
-              toEmail: consultantUser.user.email,
-              template: "APPOINTMENT_REQUESTED",
-              data: getAppointmentRequestedTemplate({
-                consultantName: consultantUser.user.fullName,
-                clientName: clientProfile.displayName,
-                startsAtFormatted,
-                appointmentId: appointment.id,
-              }),
-            },
+    const result = await retryOnWriteConflict(async () => {
+      const appointment = await db.$transaction(async (tx) => {
+        const appointment = await tx.appointment.create({
+          data: {
+            clientProfileId: clientProfile.id,
+            consultantProfileId: consultantProfile.id,
+            startsAt,
+            endsAt,
+            clientTimezone: actor.timezone,
+            consultantTimezone: consultantProfile.timezone,
+            status: consultantProfile.autoConfirmBookings ? "CONFIRMED" : "PENDING",
+            confirmedAt: consultantProfile.autoConfirmBookings ? new Date() : null,
+            consultationType: input.consultationType,
+            priceMinor: consultantProfile.sessionPriceMinor,
+            currency: consultantProfile.currency,
+            sessionDurationMinutes: consultantProfile.sessionDurationMinutes,
+            clientNote: input.clientNote,
+            requestIdempotencyKey: input.idempotencyKey,
           },
-          tx,
-        );
-      }
+          select: { id: true, status: true },
+        });
+
+        // Emit notification & queue email outbox inside the transaction (ARCHITECTURE.md §20)
+        const consultantUser = await tx.consultantProfile.findUnique({
+          where: { id: consultantProfile.id },
+          select: { userId: true, user: { select: { email: true, fullName: true } } },
+        });
+
+        if (consultantUser) {
+          const startsAtFormatted = startsAt.toUTCString();
+          await sendNotification(
+            {
+              userId: consultantUser.userId,
+              type: "APPOINTMENT_REQUESTED",
+              payload: {
+                title: "New Booking Request",
+                message: `${clientProfile.displayName} requested an appointment on ${startsAtFormatted}`,
+                appointmentId: appointment.id,
+                link: `/consultant/appointments/${appointment.id}`,
+              },
+              emailDetails: {
+                toEmail: consultantUser.user.email,
+                template: "APPOINTMENT_REQUESTED",
+                data: getAppointmentRequestedTemplate({
+                  consultantName: consultantUser.user.fullName,
+                  clientName: clientProfile.displayName,
+                  startsAtFormatted,
+                  appointmentId: appointment.id,
+                }),
+              },
+            },
+            tx,
+          );
+        }
+
+        return appointment;
+      });
 
       return appointment;
     });

@@ -5,7 +5,6 @@ import { Toaster } from "@/components/feedback/toaster";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { siteConfig } from "@/config/site";
 import { AnonymousAuthActions, AuthMenu } from "@/features/auth/auth-menu";
-import { getCurrentUser } from "@/server/auth/dal";
 import "../globals.css";
 
 export const metadata: Metadata = {
@@ -18,8 +17,7 @@ export const metadata: Metadata = {
   applicationName: siteConfig.name,
 };
 
-export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
-  await getCurrentUser();
+export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col font-sans">

@@ -7,14 +7,15 @@ import { getUnreadNotificationCount } from "@/server/dal/notification";
 export async function GET() {
   const user = await getCurrentUser();
 
-  if (!user) {
-    return NextResponse.json({ unreadCount: 0 }, { status: 401 });
+  let unreadCount = 0;
+
+  if (user) {
+    try {
+      unreadCount = await getUnreadNotificationCount(user.id);
+    } catch (_err) {
+      unreadCount = 0;
+    }
   }
 
-  try {
-    const unreadCount = await getUnreadNotificationCount(user.id);
-    return NextResponse.json({ unreadCount });
-  } catch (_err) {
-    return NextResponse.json({ unreadCount: 0 }, { status: 500 });
-  }
+  return NextResponse.json({ unreadCount });
 }

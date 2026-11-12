@@ -6,7 +6,6 @@ import { Toaster } from "@/components/feedback/toaster";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { siteConfig } from "@/config/site";
 import { AnonymousAuthActions, AuthMenu } from "@/features/auth/auth-menu";
-import { getCurrentUser } from "@/server/auth/dal";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,8 +28,7 @@ export const metadata: Metadata = {
   applicationName: siteConfig.name,
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  await getCurrentUser();
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
